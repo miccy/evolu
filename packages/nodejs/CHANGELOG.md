@@ -1,5 +1,20 @@
 # @evolu/nodejs
 
+## 1.0.1-preview.7
+
+### Patch Changes
+
+- 2f30dcd: Update deps
+- Updated dependencies [2f30dcd]
+- Updated dependencies [4a82c06]
+  - @evolu/common@6.0.1-preview.18
+
+## 1.0.1-preview.6
+
+### Patch Changes
+
+- d636768: Remove versioned database naming from relay
+
 ## 1.0.1-preview.5
 
 ### Patch Changes

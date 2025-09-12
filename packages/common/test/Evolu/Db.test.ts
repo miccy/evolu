@@ -1,4 +1,4 @@
-import { assert, expect, test } from "vitest";
+import { expect, test } from "vitest";
 import { CallbackId } from "../../src/Callbacks.js";
 import { createConsole } from "../../src/Console.js";
 import {
@@ -7,9 +7,7 @@ import {
   DbWorker,
   DbWorkerOutput,
   DbWorkerPlatformDeps,
-  getDbSchema,
   getDbSnapshot,
-  maybeMigrateToVersion0,
 } from "../../src/Evolu/Db.js";
 import {
   Base64Url256,
@@ -24,7 +22,6 @@ import {
   testCreateId,
   testCreateMnemonic,
   testCreateRandomBytesDep,
-  testCreateSqlite,
   testCreateSqliteDriver,
   testDbConfig,
   testNanoIdLib,
@@ -34,128 +31,6 @@ import {
   testTime,
 } from "../_deps.js";
 import { testTimestampsAsc } from "./_fixtures.js";
-
-const testCreateVersion0 = ({ exec }: Sqlite): void => {
-  exec(sql`begin;`);
-
-  exec(sql`
-    create table "evolu_message" (
-      "timestamp" blob primary key,
-      "table" blob,
-      "id" blob,
-      "column" blob,
-      "value" blob
-    );
-  `);
-
-  exec(sql`
-    create index "index_evolu_message" on "evolu_message" (
-      "table",
-      "id",
-      "column",
-      "timestamp" desc
-    );
-  `);
-
-  exec(sql`
-    insert into evolu_message
-    values
-      (
-        '2024-08-24T07:16:20.246Z-0000-431898faea378430',
-        'todoCategory',
-        'VeLlYHBvFcy3yAhboJp-L',
-        'name',
-        'Not Urgent'
-      );
-  `);
-
-  exec(sql`
-    insert into evolu_message
-    values
-      (
-        '2024-08-24T07:16:20.246Z-0001-431898faea378430',
-        'todo',
-        'JiSMETkhgJT-GZ_2W3p48',
-        'title',
-        'Try React Suspense'
-      );
-  `);
-
-  exec(sql`
-    insert into evolu_message
-    values
-      (
-        '2024-08-24T07:16:20.246Z-0002-431898faea378430',
-        'todo',
-        'JiSMETkhgJT-GZ_2W3p48',
-        'categoryId',
-        'VeLlYHBvFcy3yAhboJp-L'
-      );
-  `);
-
-  exec(sql`
-    insert into evolu_message
-    values
-      (
-        '2024-08-24T07:16:28.969Z-0000-431898faea378430',
-        'todo',
-        '18DyYqVEmVI0voIlxbniY',
-        'title',
-        'Test 1'
-      );
-  `);
-
-  exec(sql`
-    insert into evolu_message
-    values
-      (
-        '2024-09-05T12:54:42.857Z-0000-431898faea378430',
-        'todo',
-        'ZMmNCbACx5Km29e5wZ48l',
-        'isCompleted',
-        1
-      );
-  `);
-
-  exec(sql`
-    create table "evolu_owner" (
-      "id" blob,
-      "mnemonic" blob,
-      "encryptionkey" blob,
-      "timestamp" blob,
-      "merkletree" blob
-    );
-  `);
-
-  exec(sql`
-    insert into evolu_owner
-    values
-      (
-        'NXqRROM1U3dSJRawS9LRf',
-        'over elder sense peace scheme hard total pigeon access tomato spray ocean',
-        x'8d6b3447d9a6ae6890eead6b713b1c297e7af26ec7eb4cb5d90f5657d9091539',
-        '2024-09-05T14:07:03.338Z-0004-de562c45893915d4',
-        '{"2":{"0":{"0":{"0":{"0":{"0":{"2":{"0":{"1":{"2":{"2":{"1":{"0":{"0":{"1":{"1":{"hash":676696346},"hash":676696346},"hash":676696346},"hash":676696346},"hash":676696346},"hash":676696346},"hash":676696346},"hash":676696346},"hash":676696346},"hash":676696346},"hash":676696346},"1":{"0":{"0":{"0":{"0":{"2":{"1":{"2":{"1":{"0":{"1":{"hash":1532565686},"hash":1532565686},"hash":1532565686},"hash":1532565686},"hash":1532565686},"hash":1532565686},"hash":1532565686},"2":{"2":{"2":{"1":{"1":{"1":{"0":{"hash":1149993009},"1":{"hash":1677793058},"2":{"hash":-1929932990},"hash":-1401087919},"2":{"0":{"hash":-1331646170},"1":{"hash":1147271680},"2":{"hash":1003866511},"hash":-820739415},"hash":1667865336},"2":{"0":{"0":{"hash":-1060739940},"hash":-1060739940},"hash":-1060739940},"hash":-1548747164},"hash":-1548747164},"hash":-1548747164},"hash":-1548747164},"hash":-118036782},"hash":-118036782},"hash":-118036782},"hash":-118036782},"hash":-794593336},"hash":-794593336},"hash":-794593336},"hash":-794593336},"hash":-794593336},"hash":-794593336}'
-      );
-  `);
-
-  exec(sql`commit;`);
-};
-
-test("maybeMigrateTo0", async () => {
-  const sqlite = await testCreateSqlite();
-  testCreateVersion0(sqlite);
-
-  const schema = getDbSchema({ sqlite })();
-  assert(schema.ok);
-
-  const messagesMnemonicLastTimestamp = maybeMigrateToVersion0({
-    ...testCreateRandomBytesDep,
-    sqlite,
-  })(schema.value);
-
-  assert(messagesMnemonicLastTimestamp.ok);
-});
 
 const createSimpleTestSchema = (): DbSchema => {
   return {
@@ -215,7 +90,6 @@ const setupInitializedDbWorker = async (
     type: "init",
     config: testDbConfig,
     dbSchema: createSimpleTestSchema(),
-    initialData: [],
   });
 
   // async createSqliteDriver
@@ -357,4 +231,312 @@ test("evolu_history unique index prevents duplicates", async () => {
     `),
   );
   expect(count.rows[0].count).toBe(1);
+});
+
+test("timestamp ordering - newer mutations overwrite older ones", async () => {
+  const [, sqlite, db] = await setupInitializedDbWorker();
+
+  const recordId = testCreateId();
+
+  // Create first mutation
+  db.postMessage({
+    type: "mutate",
+    tabId: testCreateId(),
+    changes: [
+      {
+        id: recordId,
+        table: "testTable" as Base64Url256,
+        values: { ["name" as Base64Url256]: "first_value" },
+      },
+    ],
+    onCompleteIds: [],
+    subscribedQueries: [],
+  });
+
+  await wait(10);
+
+  // Create second mutation on same record (will have newer timestamp)
+  db.postMessage({
+    type: "mutate",
+    tabId: testCreateId(),
+    changes: [
+      {
+        id: recordId,
+        table: "testTable" as Base64Url256,
+        values: { ["name" as Base64Url256]: "second_value" },
+      },
+    ],
+    onCompleteIds: [],
+    subscribedQueries: [],
+  });
+
+  await wait(10);
+
+  // Verify the app table has the latest value
+  const finalResult = getOrThrow(
+    sqlite.exec<{ name: string }>(sql`
+      select name from testTable where id = ${recordId};
+    `),
+  );
+  expect(finalResult.rows[0].name).toBe("second_value");
+
+  // Verify both mutations are stored in history
+  const historyCount = getOrThrow(
+    sqlite.exec<{ count: number }>(sql`
+      select count(*) as count
+      from evolu_history
+      where
+        "table" = 'testTable'
+        and "id" = ${idToBinaryId(recordId)}
+        and "column" = 'name';
+    `),
+  );
+  expect(historyCount.rows[0].count).toBe(2);
+});
+
+test("timestamp ordering - multiple columns update independently", async () => {
+  const [, sqlite, db] = await setupInitializedDbWorker();
+
+  const recordId = testCreateId();
+
+  // Create first mutation that sets the name
+  db.postMessage({
+    type: "mutate",
+    tabId: testCreateId(),
+    changes: [
+      {
+        id: recordId,
+        table: "testTable" as Base64Url256,
+        values: { ["name" as Base64Url256]: "original_name" },
+      },
+    ],
+    onCompleteIds: [],
+    subscribedQueries: [],
+  });
+
+  await wait(10);
+
+  // Update the same record with a different value for name
+  db.postMessage({
+    type: "mutate",
+    tabId: testCreateId(),
+    changes: [
+      {
+        id: recordId,
+        table: "testTable" as Base64Url256,
+        values: { ["name" as Base64Url256]: "updated_name" },
+      },
+    ],
+    onCompleteIds: [],
+    subscribedQueries: [],
+  });
+
+  await wait(10);
+
+  // Verify the app table has the latest name value
+  const finalResult = getOrThrow(
+    sqlite.exec<{ name: string }>(sql`
+      select name from testTable where id = ${recordId};
+    `),
+  );
+  expect(finalResult.rows[0].name).toBe("updated_name");
+
+  // Verify we have two entries in history for the name column
+  const nameHistoryCount = getOrThrow(
+    sqlite.exec<{ count: number }>(sql`
+      select count(*) as count
+      from evolu_history
+      where
+        "table" = 'testTable'
+        and "id" = ${idToBinaryId(recordId)}
+        and "column" = 'name';
+    `),
+  );
+  expect(nameHistoryCount.rows[0].count).toBe(2);
+
+  // Verify the values are stored in chronological order in history
+  const historyValues = getOrThrow(
+    sqlite.exec<{ value: string }>(sql`
+      select value
+      from evolu_history
+      where
+        "table" = 'testTable'
+        and "id" = ${idToBinaryId(recordId)}
+        and "column" = 'name'
+      order by timestamp;
+    `),
+  );
+  expect(historyValues.rows[0].value).toBe("original_name");
+  expect(historyValues.rows[1].value).toBe("updated_name");
+});
+
+test("timestamp ordering - concurrent mutations on different records", async () => {
+  const [, sqlite, db] = await setupInitializedDbWorker();
+
+  const recordId1 = testCreateId();
+  const recordId2 = testCreateId();
+
+  // Create mutations on different records in quick succession
+  db.postMessage({
+    type: "mutate",
+    tabId: testCreateId(),
+    changes: [
+      {
+        id: recordId1,
+        table: "testTable" as Base64Url256,
+        values: { ["name" as Base64Url256]: "record1_value" },
+      },
+      {
+        id: recordId2,
+        table: "testTable" as Base64Url256,
+        values: { ["name" as Base64Url256]: "record2_value" },
+      },
+    ],
+    onCompleteIds: [],
+    subscribedQueries: [],
+  });
+
+  await wait(10);
+
+  // Verify both records exist with correct values
+  const allRecords = getOrThrow(
+    sqlite.exec<{ id: string; name: string }>(sql`
+      select id, name
+      from testTable
+      where id in (${recordId1}, ${recordId2})
+      order by id;
+    `),
+  );
+  expect(allRecords.rows).toHaveLength(2);
+
+  const record1 = allRecords.rows.find((r) => r.id === recordId1);
+  const record2 = allRecords.rows.find((r) => r.id === recordId2);
+
+  expect(record1?.name).toBe("record1_value");
+  expect(record2?.name).toBe("record2_value");
+
+  // Verify both records have entries in history
+  const totalHistoryCount = getOrThrow(
+    sqlite.exec<{ count: number }>(sql`
+      select count(*) as count
+      from evolu_history
+      where "table" = 'testTable' and "column" = 'name';
+    `),
+  );
+  expect(totalHistoryCount.rows[0].count).toBe(2);
+});
+
+test("timestamp ordering - verify CRDT last-write-wins behavior", async () => {
+  const [, sqlite, db] = await setupInitializedDbWorker();
+
+  const recordId = testCreateId();
+
+  // Create initial value
+  db.postMessage({
+    type: "mutate",
+    tabId: testCreateId(),
+    changes: [
+      {
+        id: recordId,
+        table: "testTable" as Base64Url256,
+        values: { ["name" as Base64Url256]: "initial" },
+      },
+    ],
+    onCompleteIds: [],
+    subscribedQueries: [],
+  });
+
+  await wait(10);
+
+  // Update multiple times rapidly to ensure different timestamps
+  db.postMessage({
+    type: "mutate",
+    tabId: testCreateId(),
+    changes: [
+      {
+        id: recordId,
+        table: "testTable" as Base64Url256,
+        values: { ["name" as Base64Url256]: "second" },
+      },
+    ],
+    onCompleteIds: [],
+    subscribedQueries: [],
+  });
+
+  await wait(5);
+
+  db.postMessage({
+    type: "mutate",
+    tabId: testCreateId(),
+    changes: [
+      {
+        id: recordId,
+        table: "testTable" as Base64Url256,
+        values: { ["name" as Base64Url256]: "third" },
+      },
+    ],
+    onCompleteIds: [],
+    subscribedQueries: [],
+  });
+
+  await wait(5);
+
+  db.postMessage({
+    type: "mutate",
+    tabId: testCreateId(),
+    changes: [
+      {
+        id: recordId,
+        table: "testTable" as Base64Url256,
+        values: { ["name" as Base64Url256]: "final" },
+      },
+    ],
+    onCompleteIds: [],
+    subscribedQueries: [],
+  });
+
+  await wait(10);
+
+  // Verify app table has the final value (last write wins)
+  const appTableResult = getOrThrow(
+    sqlite.exec<{ name: string }>(sql`
+      select name from testTable where id = ${recordId};
+    `),
+  );
+  expect(appTableResult.rows[0].name).toBe("final");
+
+  // Verify all mutations are preserved in history in timestamp order
+  const historyResults = getOrThrow(
+    sqlite.exec<{ value: string }>(sql`
+      select value
+      from evolu_history
+      where
+        "table" = 'testTable'
+        and "id" = ${idToBinaryId(recordId)}
+        and "column" = 'name'
+      order by timestamp;
+    `),
+  );
+
+  expect(historyResults.rows).toHaveLength(4);
+  expect(historyResults.rows[0].value).toBe("initial");
+  expect(historyResults.rows[1].value).toBe("second");
+  expect(historyResults.rows[2].value).toBe("third");
+  expect(historyResults.rows[3].value).toBe("final");
+
+  // Verify that the app table always reflects the value with the highest timestamp
+  const timestampResults = getOrThrow(
+    sqlite.exec<{ value: string; timestamp: Uint8Array }>(sql`
+      select value, timestamp
+      from evolu_history
+      where
+        "table" = 'testTable'
+        and "id" = ${idToBinaryId(recordId)}
+        and "column" = 'name'
+      order by timestamp desc
+      limit 1;
+    `),
+  );
+
+  expect(timestampResults.rows[0].value).toBe("final");
 });

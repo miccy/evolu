@@ -117,7 +117,7 @@ import {
   UnionError,
   Unknown,
 } from "../src/Type.js";
-import { Brand } from "../src/Types.js";
+import { Brand } from "../src/Brand.js";
 import { testNanoIdLib } from "./_deps.js";
 
 test("Base Types", () => {
@@ -938,7 +938,7 @@ test("id", () => {
 
 test("createId", () => {
   const id = createId({ nanoIdLib: testNanoIdLib });
-  expect(id).toMatchInlineSnapshot(`"esTwHwplqLBSE8Ou8ffX4"`);
+  expect(id).toMatchInlineSnapshot(`"3C22DRVU0AHGjXpOEP-WJ"`);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const todoId = createId<"Todo">({ nanoIdLib: testNanoIdLib });

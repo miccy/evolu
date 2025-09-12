@@ -1,3 +1,4 @@
+/* eslint-disable jsdoc/no-undefined-types */
 /**
  * 🧩 Validation, Parsing, and Transformation
  *
@@ -79,7 +80,8 @@ import { NanoIdLibDep } from "./NanoId.js";
 import { isPlainObject } from "./Object.js";
 import { Err, err, Ok, ok, Result, trySync } from "./Result.js";
 import { safelyStringifyUnknownValue } from "./String.js";
-import type { Brand, Literal, Simplify, WidenLiteral } from "./Types.js";
+import type { Literal, Simplify, WidenLiteral } from "./Types.js";
+import type { Brand } from "./Brand.js";
 import { IntentionalNever } from "./Types.js";
 
 export interface Type<
@@ -1994,7 +1996,11 @@ export const TrimString = trim(String);
  *
  * ### Example
  *
- * TODO:
+ * ```ts
+ * DateIso.from(new Date("2023-12-25T10:30:00.000Z")); // ok("2023-12-25T10:30:00.000Z")
+ * DateIso.to("2023-12-25T10:30:00.000Z"); // Date object
+ * DateIso.from(new Date("invalid")); // err({ type: "DateIsoString", value: "Invalid Date" })
+ * ```
  *
  * @category String
  */

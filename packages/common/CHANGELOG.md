@@ -1,10 +1,128 @@
 # @evolu/common
 
+## 6.0.1-preview.19
+
+### Patch Changes
+
+- a2551db: Add deriveSlip21Node
+
+## 6.0.1-preview.18
+
+### Patch Changes
+
+- 2f30dcd: Update deps
+- 4a82c06: Improve getOrThrow: throw a standard Error with `cause` instead of stringifying the error.
+  - Before: `new Error(`Result error: ${JSON.stringify(err)}`)`
+  - After: `new Error("getOrThrow failed", { cause: err })`
+
+  Why:
+  - Preserve structured business errors for machine parsing via `error.cause`.
+  - Avoid brittle stringified error messages and preserve a proper stack trace.
+
+  Migration:
+  - If you matched error messages, switch to inspecting `error.cause`.
+
+## 6.0.1-preview.17
+
+### Patch Changes
+
+- 6eca947: Replace initialData with onInit callback
+  - Remove `initialData` function from Config interface
+  - Add `onInit` callback with `isFirst` parameter for one-time initialization
+  - Simplify database initialization by removing pre-init data handling
+  - Provide better control over initialization lifecycle
+
+## 6.0.1-preview.16
+
+### Patch Changes
+
+- af1e668: # Owners refactor and external AppOwner support
+
+  ## 🚀 Features
+  - **External AppOwner Support**: `AppOwner` can now be created from external keys without sharing the mnemonic with the Evolu app. The `mnemonic` property is now optional, allowing for better security when integrating with external authentication systems.
+  - **New Config Option**: Added `initialAppOwner` configuration option to specify a pre-existing AppOwner when creating an Evolu instance, replacing the previous `mnemonic` option for better encapsulation.
+
+  ## 🔄 Breaking Changes
+  - **Owner API Redesign**: Complete refactor of the Owner system with cleaner, more focused interfaces:
+    - Simplified `Owner` interface with only essential properties (`id`, `encryptionKey`, `writeKey`)
+    - Removed temporal properties (`createdAt`, `timestamp`) from core Owner interface
+    - Eliminated complex `OwnerRow` and `OwnerWithWriteAccess` types
+  - **Database Schema Changes**:
+    - Replaced `evolu_owner` table with streamlined `evolu_config` table
+    - New `evolu_version` table for protocol versioning
+    - Simplified storage of AppOwner data in single config row
+  - **Configuration Changes**:
+    - `Config.mnemonic` replaced with `Config.initialAppOwner`
+    - More explicit control over owner initialization
+
+  ## ✨ Improvements
+  - **Enhanced Documentation**: Comprehensive JSDoc with clear explanations of owner types, use cases, and examples
+  - **Clock Management**: New internal clock system for better timestamp handling
+  - **Test Coverage**: Extensive test suite covering all owner types and edge cases
+
+  ## 🔧 Internal Changes
+  - **Database Initialization**: Refactored database setup to use new schema with better separation of concerns
+  - **Protocol Updates**: Updated to protocol version 0 with new storage format
+
+## 6.0.1-preview.15
+
+### Patch Changes
+
+- 6452d57: Non-initiator always responds in sync protocol for completion feedback
+
+  The non-initiator (relay/server) now always responds to sync requests, even when there's no data to send, by returning an empty message (19 bytes). This enables reliable sync completion detection for initiators (clients).
+
+## 6.0.1-preview.14
+
+### Patch Changes
+
+- 0911302: Enhance message integrity by embedding timestamps in encrypted data
+  - Add timestamp tamper-proofing to encrypted CRDT messages by embedding the timestamp within the encrypted payload
+  - Update `encodeAndEncryptDbChange` to accept `CrdtMessage` instead of `DbChange` and include timestamp in encrypted data
+  - Update `decryptAndDecodeDbChange` to verify embedded timestamp matches expected timestamp
+  - Add `ProtocolTimestampMismatchError` for timestamp verification failures
+  - Export `eqTimestamp` equality function for timestamp comparison
+  - Add `binaryTimestampLength` constant for consistent binary timestamp size
+  - Fix `Db.ts` to pass complete `CrdtMessage` to encryption functions
+  - Add test for timestamp tamper-proofing scenarios
+
+  This security enhancement prevents tampering with message timestamps by cryptographically binding them to the encrypted change data, ensuring message integrity and preventing replay attacks with modified timestamps.
+
+- 3daa221: Add protocol versioning to EncryptedDbChange
+
+  Protocol version is now encoded as the first field in EncryptedDbChange binary format. This enables safe evolution of the format while maintaining backward compatibility.
+
 ## 6.0.1-preview.13
 
 ### Patch Changes
 
 - c4fb4b0: Docs for insert, update, and upsert methods
+- e213d63: Improve createdAt handling in mutations
+
+  This release enhances the handling of the `createdAt` column in Evolu mutations, providing more flexibility for data migrations and external system integrations while maintaining distributed system semantics.
+
+  ### Changes
+
+  **createdAt Behavior:**
+  - `insert`: Always sets `createdAt` to current timestamp
+  - `upsert`: Sets `createdAt` to current timestamp if not provided, or uses custom value if specified
+  - `update`: Never sets `createdAt` (unchanged behavior)
+
+  **Documentation Improvements:**
+  - Updated JSDoc for `DefaultColumns` with clear explanations of each column's behavior
+  - Clarified that `updatedAt` is always set by Evolu and derived from CrdtMessage timestamp
+  - Added guidance for using custom timestamp columns when deferring sync for privacy
+  - Enhanced mutation method documentation with practical examples
+
+  ### Example
+
+  ```ts
+  evolu.upsert("todo", {
+    id: externalId,
+    title: "Migrated todo",
+    createdAt: new Date("2023-01-01"), // Preserve original timestamp
+  });
+  ```
 
 ## 6.0.1-preview.12
 
@@ -17,7 +135,6 @@
 ### Patch Changes
 
 - 6279aea: Add external ID support with `createIdFromString` function
-
   - Add `createIdFromString` function that converts external string identifiers to valid Evolu IDs using SHA-256
   - Add optional branding support to both `createId` and `createIdFromString` functions
   - Update FAQ documentation with external ID integration examples
@@ -32,7 +149,6 @@
 - 45c8ca9: Add in-memory database support for testing and temporary data
 
   This change introduces a new `inMemory` configuration option that allows creating SQLite databases in memory instead of persistent storage. In-memory databases exist only in RAM and are completely destroyed when the process ends, making them ideal for:
-
   - Testing scenarios where data persistence isn't needed
   - Temporary data processing
   - Forensically safe handling of sensitive data
@@ -80,7 +196,6 @@
 - c86cb14: Add timing-safe comparison for WriteKey validation
 
   ### Security Improvements
-
   - Add `TimingSafeEqual` type and `TimingSafeEqualDep` interface for platform-independent timing-safe comparison
   - Implement Node.js timing-safe comparison using `crypto.timingSafeEqual()`
   - Replace vulnerable `eqArrayNumber` WriteKey comparison with constant-time algorithm to prevent timing attacks
@@ -272,7 +387,6 @@
   The great news is that Effect is stable now, so there will be no more releases with deps updates. Let's dance 🪩
 
   New features:
-
   - Multitenancy (we can run more Evolu instances side by side)
   - Initial data (to define fixtures)
   - Logging (you can see what's happening inside Evolu step by step)
