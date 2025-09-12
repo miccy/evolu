@@ -70,19 +70,23 @@
  * @module
  */
 
-import { utf8ToBytes } from "@noble/ciphers/utils";
-import { sha256 } from "@noble/hashes/sha2";
+import { utf8ToBytes } from "@noble/ciphers/utils.js";
+import { sha256 } from "@noble/hashes/sha2.js";
 import * as bip39 from "@scure/bip39";
-import { wordlist } from "@scure/bip39/wordlists/english";
+import { wordlist } from "@scure/bip39/wordlists/english.js";
 import { assert } from "./Assert.js";
+import type { Brand } from "./Brand.js";
 import { identity } from "./Function.js";
 import { NanoIdLibDep } from "./NanoId.js";
 import { isPlainObject } from "./Object.js";
-import { Err, err, Ok, ok, Result, trySync } from "./Result.js";
+import { Err, err, getOrThrow, Ok, ok, Result, trySync } from "./Result.js";
 import { safelyStringifyUnknownValue } from "./String.js";
 import type { Literal, Simplify, WidenLiteral } from "./Types.js";
-import type { Brand } from "./Brand.js";
 import { IntentionalNever } from "./Types.js";
+// @ts-expect-error: Module lacks type declarations
+import fromBase64Implementation from "es-arraybuffer-base64/Uint8Array.fromBase64";
+// @ts-expect-error: Module lacks type declarations
+import toBase64Implementation from "es-arraybuffer-base64/Uint8Array.prototype.toBase64";
 
 export interface Type<
   Name extends TypeName,
@@ -107,6 +111,19 @@ export interface Type<
    * `from` is a typed alias of `fromUnknown`.
    */
   readonly from: (value: Input) => Result<T, ParentError | Error>;
+
+  /**
+   * Creates `T` from an `Input` value, throwing an error if validation fails.
+   *
+   * This is a convenience method that combines `from` with `getOrThrow`.
+   *
+   * ### Example
+   *
+   * ```ts
+   * const duration = Duration.fromOrThrow(minutes(1) + seconds(20));
+   * ```
+   */
+  readonly fromOrThrow: (value: Input) => T;
 
   /**
    * Creates `T` from an unknown value.
@@ -313,6 +330,7 @@ const createType = <
     | "name"
     | "is"
     | "from"
+    | "fromOrThrow"
     | typeof EvoluTypeSymbol
     | "Type"
     | "Input"
@@ -326,6 +344,7 @@ const createType = <
   name,
   is: (value: unknown): value is T => definition.fromUnknown(value).ok,
   from: definition.fromUnknown,
+  fromOrThrow: (value: Input): T => getOrThrow(definition.fromUnknown(value)),
   [EvoluTypeSymbol]: true,
   Type: undefined as unknown as T,
   Input: undefined as unknown as Input,
@@ -861,7 +880,13 @@ export const DateIsoString = brand("DateIso", String, (value) => {
   if (value.length !== 24) {
     return err<DateIsoStringError>({ type: "DateIsoString", value });
   }
-  if (isNaN(globalThis.Date.parse(value))) {
+  const parsed = globalThis.Date.parse(value);
+  if (isNaN(parsed)) {
+    return err<DateIsoStringError>({ type: "DateIsoString", value });
+  }
+  // Round-trip test: ensure the string is actually a proper ISO format
+  const roundTrip = new globalThis.Date(parsed).toISOString();
+  if (roundTrip !== value) {
     return err<DateIsoStringError>({ type: "DateIsoString", value });
   }
   return ok(value);
@@ -1216,9 +1241,9 @@ export const formatRegexError = createTypeErrorFormatter<RegexError>(
 );
 
 /**
- * URL-safe Base64 string.
+ * URL-safe string.
  *
- * A `Base64Url` string uses a limited alphabet that is URL-safe:
+ * A `UrlSafeString` uses a limited alphabet that is safe for URLs:
  *
  * - Uppercase letters (`A-Z`)
  * - Lowercase letters (`a-z`)
@@ -1226,10 +1251,46 @@ export const formatRegexError = createTypeErrorFormatter<RegexError>(
  * - Dash (`-`)
  * - Underscore (`_`)
  *
+ * This is the same character set used by Base64Url encoding, but this type does
+ * not validate that the string is actually Base64Url-encoded data.
+ *
  * ### Example
  *
  * ```ts
- * const result = Base64Url.from("abc123_-");
+ * const result = UrlSafeString.from("abc123_-");
+ * if (result.ok) {
+ *   console.log("Valid URL-safe string:", result.value);
+ * } else {
+ *   console.error("Invalid URL-safe string:", result.error);
+ * }
+ * ```
+ *
+ * @category String
+ */
+export const UrlSafeString = regex(
+  "UrlSafeString",
+  /^[A-Za-z0-9_-]+$/, // URL-safe alphabet (same as Base64Url)
+)(String);
+export type UrlSafeString = typeof UrlSafeString.Type;
+export type UrlSafeStringError = typeof UrlSafeString.Error;
+
+/**
+ * Base64Url encoded string.
+ *
+ * A `Base64Url` string is a URL-safe string that follows Base64Url encoding
+ * conventions:
+ *
+ * - Uses the URL-safe alphabet (`A-Z`, `a-z`, `0-9`, `-`, `_`)
+ * - Length must be a multiple of 4 (for proper Base64Url decoding)
+ * - No padding characters (padding is omitted in Base64Url)
+ *
+ * This type validates both the character set and the length constraint required
+ * for valid Base64Url encoded data.
+ *
+ * ### Example
+ *
+ * ```ts
+ * const result = Base64Url.from("SGVsbG8gV29ybGQ");
  * if (result.ok) {
  *   console.log("Valid Base64Url string:", result.value);
  * } else {
@@ -1239,29 +1300,76 @@ export const formatRegexError = createTypeErrorFormatter<RegexError>(
  *
  * @category String
  */
-export const Base64Url = regex(
-  "Base64Url",
-  /^[A-Za-z0-9_-]+$/, // URL-safe Base64 alphabet
-)(String);
+export const Base64Url = brand("Base64Url", UrlSafeString, (value) =>
+  value.length % 4 === 0
+    ? ok(value)
+    : err<Base64UrlError>({ type: "Base64Url", value }),
+);
 export type Base64Url = typeof Base64Url.Type;
-export type Base64UrlError = typeof Base64Url.Error;
+export interface Base64UrlError extends TypeError<"Base64Url"> {}
+
+export const formatBase64UrlError = createTypeErrorFormatter<Base64UrlError>(
+  (error) =>
+    `Value ${error.value} is not a valid Base64Url string (length must be a multiple of 4)`,
+);
+
+const base64UrlOptions = { alphabet: "base64url", omitPadding: true };
 
 /**
- * Alphabet used for Base64Url encoding. This is copied from the `nanoid`
- * library to avoid dependency on a specific version of `nanoid`.
+ * Node.js Buffer-based utilities for better performance when available. These
+ * maintain the same behavior as the polyfill but with better performance.
  */
-export const base64UrlAlphabet =
-  "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict";
+const hasNodeBuffer = typeof globalThis.Buffer !== "undefined";
+
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+const fromBase64Fn =
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  (globalThis.Uint8Array as any)?.fromBase64 ?? fromBase64Implementation;
 
 /**
- * Simple alphanumeric string for naming.
+ * Decodes a Base64Url string to bytes using consistent validation. Uses Node.js
+ * Buffer for better performance when available, otherwise uses native
+ * implementation or falls back to polyfill.
+ */
+export const base64UrlToUint8Array = (str: Base64Url): Uint8Array => {
+  // Use Node.js Buffer for better performance when available
+  if (hasNodeBuffer) {
+    const nodeBuffer = globalThis.Buffer.from(str, "base64url");
+    return new globalThis.Uint8Array(nodeBuffer);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  return fromBase64Fn(str, base64UrlOptions) as Uint8Array;
+};
+
+/**
+ * Encodes bytes to a Base64Url string using consistent validation. Uses Node.js
+ * Buffer for better performance when available, otherwise uses native
+ * implementation or falls back to polyfill.
+ */
+export const uint8ArrayToBase64Url = (bytes: Uint8Array): Base64Url => {
+  // Use Node.js Buffer for better performance when available
+  if (hasNodeBuffer) {
+    return globalThis.Buffer.from(bytes).toString("base64url") as Base64Url;
+  }
+
+  // Use native implementation if available
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  if ((bytes as any).toBase64) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    return (bytes as any).toBase64(base64UrlOptions) as Base64Url;
+  }
+
+  // Fall back to polyfill implementation
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  return toBase64Implementation(bytes, base64UrlOptions) as Base64Url;
+};
+
+/**
+ * Simple alphanumeric string for naming in file systems, URLs, and identifiers.
  *
- * A `SimpleName` string uses a limited, safe alphabet for naming purposes:
- *
- * - Uppercase letters (`A-Z`)
- * - Lowercase letters (`a-z`)
- * - Digits (`0-9`)
- * - Dash (`-`)
+ * Uses the same safe alphabet as {@link UrlSafeString} (letters, digits, `-`,
+ * `_`). See `UrlSafeString` for details.
  *
  * The string must be between 1 and 42 characters.
  *
@@ -1278,9 +1386,13 @@ export const base64UrlAlphabet =
  *
  * @category String
  */
-export const SimpleName = regex("SimpleName", /^[a-z0-9-]{1,42}$/i)(String);
+export const SimpleName = brand("SimpleName", UrlSafeString, (value) =>
+  value.length >= 1 && value.length <= 42
+    ? ok(value)
+    : err<SimpleNameError>({ type: "SimpleName", value }),
+);
 export type SimpleName = typeof SimpleName.Type;
-export type SimpleNameError = typeof SimpleName.Error;
+export interface SimpleNameError extends TypeError<"SimpleName"> {}
 
 /**
  * Default NanoId.
@@ -1314,10 +1426,10 @@ export const formatSimplePasswordError = (
   );
 
 /**
- * `Id` {@link Type}.
+ * Globally unique identifier using NanoID.
  *
- * Represents a unique identifier with exactly 21 characters, using NanoID's
- * standard format (`A-Za-z0-9_-`).
+ * A 21-character string generated by the NanoID library using the URL-safe
+ * alphabet `A-Za-z0-9_-`.
  *
  * @category String
  */
@@ -1380,23 +1492,43 @@ export const createIdFromString = <B extends string = never>(
   value: string,
 ): [B] extends [never] ? Id : Id & Brand<B> => {
   const hash = sha256(utf8ToBytes(value));
+  const id = createIdFromHash(hash);
 
-  let output = "";
-  let buffer = 0;
-  let bits = 0;
+  return id as [B] extends [never] ? Id : Id & Brand<B>;
+};
 
-  for (const byte of hash) {
-    buffer = (buffer << 8) | byte;
-    bits += 8;
+/**
+ * Creates an {@link Id} from hash data.
+ *
+ * Takes the first 16 bytes of hash data, converts to {@link BinaryId}, then to a
+ * 21-character {@link Id} using Base64Url encoding. This provides consistent ID
+ * generation from cryptographic hashes.
+ *
+ * ### Example
+ *
+ * ```ts
+ * const hash = sha256(utf8ToBytes("hello"));
+ * const id = createIdFromHash(hash);
+ * ```
+ */
+export const createIdFromHash = (hash: Uint8Array): Id => {
+  assert(
+    hash.length >= 16,
+    `Hash data must be at least 16 bytes, got ${hash.length}`,
+  );
 
-    while (bits >= 6 && output.length < idTypeValueLength) {
-      bits -= 6;
-      const index = (buffer >> bits) & 0b111111;
-      output += base64UrlAlphabet[index];
-    }
-  }
+  const binaryIdBytes = hash.slice(0, binaryIdTypeValueLength);
 
-  return output as [B] extends [never] ? Id : Id & Brand<B>;
+  // Ensure last 2 bits are zero for valid BinaryId format
+  binaryIdBytes[15] &= 0b11111100;
+
+  /**
+   * Type assertion is safe: BinaryId requires exactly 16 bytes with last 2 bits
+   * zero. We guarantee both constraints programmatically. This format is stable
+   * and cannot change without breaking existing data/protocol compatibility.
+   */
+  const binaryId = binaryIdBytes as BinaryId;
+  return binaryIdToId(binaryId);
 };
 
 /**
@@ -1458,6 +1590,33 @@ export interface IdError<Table extends TypeName = TypeName>
 export const formatIdError = createTypeErrorFormatter<IdError>(
   (error) => `Invalid ${error.type} table Id: ${error.value}`,
 );
+
+/** Binary representation of an {@link Id}. */
+export const BinaryId = brand("BinaryId", Uint8Array, (value) =>
+  // A BinaryId is exactly 16 bytes (128 bits) representing a 21-character Id (126
+  // bits of entropy). The validation ensures the last 2 bits are zero, which
+  // guarantees lossless conversion between Id and BinaryId formats.
+  value.length === 16 && (value[15] & 0b11) === 0
+    ? ok(value)
+    : err<BinaryIdError>({ type: "BinaryId", value }),
+);
+export type BinaryId = typeof BinaryId.Type;
+
+export interface BinaryIdError extends TypeError<"BinaryId"> {}
+
+export const formatBinaryIdError = createTypeErrorFormatter<BinaryIdError>(
+  (error) => `Invalid BinaryId: ${error.value}`,
+);
+
+export const binaryIdTypeValueLength = 16 as NonNegativeInt;
+
+export const idToBinaryId = (id: Id): BinaryId =>
+  // Add "A" to make 22 chars so Base64URL decodes to exactly 16 bytes.
+  base64UrlToUint8Array((id + "A") as Base64Url) as BinaryId;
+
+export const binaryIdToId = (binaryId: BinaryId): Id =>
+  // Remove padding - 16 bytes encode to 22 chars, Id is 21 chars.
+  uint8ArrayToBase64Url(binaryId).slice(0, 21) as Id;
 
 /**
  * Positive number.

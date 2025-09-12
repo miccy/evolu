@@ -5,11 +5,12 @@ import { err, ok, Result } from "../Result.js";
 import { sql, SqliteError } from "../Sqlite.js";
 import { SimpleName } from "../Type.js";
 import { OwnerId, WriteKey } from "./Owner.js";
-import { EncryptedDbChange, Storage } from "./Protocol.js";
 import {
   createSqliteStorageBase,
   CreateSqliteStorageBaseOptions,
+  EncryptedDbChange,
   SqliteStorageDeps,
+  Storage,
 } from "./Storage.js";
 import { timestampToBinaryTimestamp } from "./Timestamp.js";
 
@@ -107,7 +108,9 @@ export const createRelayStorage =
         return true;
       },
 
-      writeMessages: (ownerId, messages) => {
+      // https://eslint.org/docs/latest/rules/require-await#when-not-to-use-it
+      // eslint-disable-next-line @typescript-eslint/require-await
+      writeMessages: async (ownerId, messages) => {
         const result = deps.sqlite.transaction(() => {
           for (const message of messages) {
             const insertTimestampResult =

@@ -1,17 +1,16 @@
 import {
   createConsole,
-  createEnglishMnemonic,
   createNanoIdLib,
   createRandom,
   createRandomBytes,
   createTime,
+  createWebSocket,
 } from "@evolu/common";
 
 import {
   CreateAppState,
   CreateDbWorker,
   createDbWorkerForPlatform,
-  createWebSocketSync,
   EvoluDeps,
 } from "@evolu/common/evolu";
 
@@ -31,26 +30,25 @@ export const createAppState: CreateAppState = () => ({
   },
 });
 
-const nanoIdLib = createNanoIdLib();
 const console = createConsole();
+const nanoIdLib = createNanoIdLib();
 const time = createTime();
 
 const createDbWorker: CreateDbWorker = () =>
   createDbWorkerForPlatform({
-    createSqliteDriver: createOpSqliteDriver,
-    createSync: createWebSocketSync,
     console,
-    time,
-    random: createRandom(),
+    createSqliteDriver: createOpSqliteDriver,
+    createWebSocket,
     nanoIdLib,
-    createMnemonic: createEnglishMnemonic,
-    createRandomBytes,
+    random: createRandom(),
+    randomBytes: createRandomBytes(),
+    time,
   });
 
 export const evoluReactNativeDeps: EvoluDeps = {
-  time,
-  nanoIdLib,
   console,
   createAppState,
   createDbWorker,
+  nanoIdLib,
+  time,
 };

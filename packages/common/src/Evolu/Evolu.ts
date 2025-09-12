@@ -1,8 +1,10 @@
+import { pack } from "msgpackr";
 import { isNonEmptyArray, isNonEmptyReadonlyArray } from "../Array.js";
 import { assert, assertNonEmptyArray } from "../Assert.js";
-import { createCallbacks } from "../Callbacks.js";
+import { createCallbackRegistry } from "../CallbackRegistry.js";
 import { ConsoleDep } from "../Console.js";
 import { SymmetricCryptoDecryptError } from "../Crypto.js";
+import { eqArrayNumber } from "../Eq.js";
 import { TransferableError } from "../Error.js";
 import { exhaustiveCheck } from "../Function.js";
 import { NanoIdLibDep } from "../NanoId.js";
@@ -23,14 +25,9 @@ import { IntentionalNever } from "../Types.js";
 import { Config, defaultConfig } from "./Config.js";
 import { CreateDbWorkerDep } from "./Db.js";
 import { applyPatches } from "./Diff.js";
-import { kysely } from "./Kysely.js";
 import { AppOwner } from "./Owner.js";
 import { CreateAppStateDep, FlushSyncDep } from "./Platform.js";
-import {
-  DbChange,
-  ProtocolError,
-  ProtocolUnsupportedVersionError,
-} from "./Protocol.js";
+import { ProtocolError, ProtocolUnsupportedVersionError } from "./Protocol.js";
 import {
   createSubscribedQueries,
   emptyRows,
@@ -49,7 +46,9 @@ import {
   EvoluSchema,
   evoluSchemaToDbSchema,
   insertable,
+  kysely,
   Mutation,
+  MutationChange,
   MutationKind,
   MutationMapping,
   MutationOptions,
@@ -59,7 +58,8 @@ import {
   ValidMutationSize,
   ValidMutationSizeError,
 } from "./Schema.js";
-import { initialSyncState, SyncState } from "./Sync.js";
+import { DbChange } from "./Storage.js";
+import { initialSyncState, SyncOwner, SyncState } from "./Sync.js";
 import { TimestampError } from "./Timestamp.js";
 
 export interface Evolu<S extends EvoluSchema = EvoluSchema> {
@@ -89,7 +89,8 @@ export interface Evolu<S extends EvoluSchema = EvoluSchema> {
    * All this function does is compile the Kysely query and serialize it into a
    * unique string. Both operations are fast and cheap.
    *
-   * For mutations, use {@link Evolu#insert} and {@link Evolu#update}.
+   * For mutations, use {@link Evolu#insert}, {@link Evolu#update}, or
+   * {@link Evolu#upsert}.
    *
    * ### Example
    *
@@ -438,16 +439,40 @@ export interface Evolu<S extends EvoluSchema = EvoluSchema> {
 
   /** Export SQLite database file as Uint8Array. */
   readonly exportDatabase: () => Promise<Uint8Array>;
+
+  /**
+   * Use an owner. Using an owner means syncing it and subscribing to
+   * broadcasted changes. Returns a function to stop using the owner.
+   *
+   * Transport connections are automatically deduplicated and reference-counted,
+   * so multiple owners using the same transport will share a single
+   * connection.
+   *
+   * ### Example
+   *
+   * ```ts
+   * // Use an owner (starts syncing and subscribing to changes).
+   * const unuse = evolu.useOwner(shardOwner);
+   *
+   * // Later, stop using the owner.
+   * unuse();
+   *
+   * // Bulk operations.
+   * const unuses = owners.map((owner) => evolu.useOwner(owner));
+   * // Later: unuses.forEach(unuse => unuse());
+   * ```
+   */
+  readonly useOwner: (owner: SyncOwner) => () => void;
 }
 
 /** Represent errors that can occur in Evolu. */
 export type EvoluError =
-  | TimestampError
   | ProtocolError
-  | TransferableError
-  | SymmetricCryptoDecryptError
   | ProtocolUnsupportedVersionError
-  | SqliteError;
+  | SqliteError
+  | SymmetricCryptoDecryptError
+  | TimestampError
+  | TransferableError;
 
 interface InternalEvoluInstance<S extends EvoluSchema = EvoluSchema>
   extends Evolu<S> {
@@ -458,37 +483,92 @@ interface InternalEvoluInstance<S extends EvoluSchema = EvoluSchema>
   readonly ensureSchema: (schema: EvoluSchema) => void;
 }
 
-export type EvoluDeps = CreateDbWorkerDep &
-  TimeDep &
+export type EvoluDeps = ConsoleDep &
+  CreateAppStateDep &
+  CreateDbWorkerDep &
   NanoIdLibDep &
   Partial<FlushSyncDep> &
-  ConsoleDep &
-  CreateAppStateDep;
+  TimeDep;
 
 export interface EvoluConfigWithFunctions extends Config {
   /**
-   * Callback invoked when the database is initialized. Use `isFirst` to perform
-   * one-time setup like initial data seeding.
+   * Callback invoked when Evolu is successfully initialized.
    *
-   * ### Example
+   * Useful for showing welcome messages and initial data seeding.
+   *
+   * ### Examples
+   *
+   * #### Welcome message
    *
    * ```ts
    * const evolu = createEvolu(evoluReactWebDeps)(Schema, {
-   *   onInit: ({ appOwner, isFirst }) => {
+   *   onInit: ({ isFirst }) => {
+   *     // Show welcome message only once when DB is initialized on a device
    *     if (isFirst) {
+   *       alert("Welcome to your new local-first app!");
+   *     }
+   *   },
+   * });
+   * ```
+   *
+   * #### Explicit initial data seeding
+   *
+   * When we know it's the first time the app is initialized (user clicked a
+   * button), we can seed initial data on the device. When the user restores
+   * their {@link AppOwner} on a different device (again, by clicking a button),
+   * we should not use onInit at all to avoid data duplication.
+   *
+   * If we need to store device-specific information (whether an owner was
+   * created, how many owners exist on the instance, etc.), we can use a
+   * local-only Evolu instance.
+   *
+   * ```ts
+   * // Local-only instance for device settings (no sync)
+   * const deviceEvolu = createEvolu(evoluReactWebDeps)(DeviceSchema, {
+   *   name: SimpleName.fromOrThrow("MyApp-Device"),
+   *   transports: [], // No sync - stays local to device
+   * });
+   *
+   * const createNewAppOwner = () => {
+   *   const evolu = createEvolu(evoluReactWebDeps)(Schema, {
+   *     onInit: () => {
    *       const todoCategoryId = getOrThrow(
    *         evolu.insert("todoCategory", {
    *           name: "Not Urgent",
    *         }),
    *       );
-   *
    *       evolu.insert("todo", {
    *         title: "Try React Suspense",
    *         categoryId: todoCategoryId.id,
    *       });
-   *     }
-   *   },
-   * });
+   *     },
+   *   });
+   * };
+   *
+   * const restoreAppOwner = () => {
+   *   const evolu = createEvolu(evoluReactWebDeps)(Schema, {
+   *     externalAppOwner: appOwner,
+   *   });
+   * };
+   * ```
+   *
+   * #### Implicit initial data seeding
+   *
+   * If the {@link AppOwner} is always provided from an external source, and we
+   * don't know whether we're creating or restoring it, and we still want
+   * initial data, then we must upsert it with stable deterministic IDs derived
+   * from the AppOwner.
+   *
+   * ```ts
+   * const setupAppOwner = () => {
+   *   const evolu = createEvolu(evoluReactWebDeps)(Schema, {
+   *     externalAppOwner: appOwner,
+   *     onInit: ({ appOwner }) => {
+   *       // Derive deterministic ShardOwner for data
+   *       // TODO:
+   *     },
+   *   });
+   * };
    * ```
    */
   readonly onInit?: (params: {
@@ -580,8 +660,9 @@ const createEvoluInstance =
     evoluConfig: EvoluConfigWithFunctions,
   ): InternalEvoluInstance => {
     deps.console.enabled = evoluConfig.enableLogging ?? false;
-
-    deps.console.log("[evolu]", "createEvoluInstance");
+    deps.console.log("[evolu]", "createEvoluInstance", {
+      name: evoluConfig.name,
+    });
 
     const { onInit, indexes, ...config } = evoluConfig;
 
@@ -592,7 +673,8 @@ const createEvoluInstance =
 
     const subscribedQueries = createSubscribedQueries(rowsStore);
     const loadingPromises = createLoadingPromises(subscribedQueries);
-    const callbacks = createCallbacks(deps);
+    const onCompleteRegistry = createCallbackRegistry(deps);
+    const exportRegistry = createCallbackRegistry<Uint8Array>(deps);
 
     const appState = deps.createAppState(config);
     const dbWorker = deps.createDbWorker(config.name);
@@ -618,13 +700,13 @@ const createEvoluInstance =
           break;
         }
 
-        case "onChange": {
+        case "onQueryPatches": {
           if (message.tabId !== getTabId()) return;
 
           const state = rowsStore.get();
           const nextState = new Map([
             ...state,
-            ...message.patches.map(
+            ...message.queryPatches.map(
               ({ query, patches }): [Query, ReadonlyArray<Row>] => [
                 query,
                 applyPatches(patches, state.get(query) ?? emptyRows),
@@ -632,7 +714,7 @@ const createEvoluInstance =
             ),
           ]);
 
-          for (const { query } of message.patches) {
+          for (const { query } of message.queryPatches) {
             loadingPromises.resolve(query, nextState.get(query) ?? emptyRows);
           }
 
@@ -645,12 +727,12 @@ const createEvoluInstance =
           }
 
           for (const id of message.onCompleteIds) {
-            callbacks.execute(id);
+            onCompleteRegistry.execute(id);
           }
           break;
         }
 
-        case "onReceive": {
+        case "refreshQueries": {
           if (message.tabId && message.tabId === getTabId()) return;
 
           loadingPromises.releaseUnsubscribed();
@@ -665,13 +747,13 @@ const createEvoluInstance =
           if (message.reload) {
             appState.reset();
           } else {
-            callbacks.execute(message.onCompleteId);
+            onCompleteRegistry.execute(message.onCompleteId);
           }
           break;
         }
 
         case "onExport": {
-          callbacks.execute(message.onCompleteId, message.file);
+          exportRegistry.execute(message.onCompleteId, message.file);
           break;
         }
 
@@ -713,8 +795,10 @@ const createEvoluInstance =
     const loadQueryMicrotaskQueue: Array<Query> = [];
 
     const mutateMicrotaskQueue: Array<
-      [DbChange | undefined, MutationOptions["onComplete"] | undefined]
+      [MutationChange | null, MutationOptions["onComplete"] | undefined]
     > = [];
+
+    const useOwnerMicrotaskQueue: Array<[SyncOwner, boolean, Uint8Array]> = [];
 
     const createMutation =
       <Kind extends MutationKind>(kind: Kind) =>
@@ -741,13 +825,12 @@ const createEvoluInstance =
 
         if (options?.onlyValidate !== true) {
           if (!result.ok) {
-            // One error must invalidate the whole queue.
-            // We insert `undefined` to detect such a situation.
-            mutateMicrotaskQueue.push([undefined, undefined]);
+            // Mark the transaction as invalid by pushing null
+            mutateMicrotaskQueue.push([null, undefined]);
           } else {
             const values = { ...result.value };
-
             delete values.id;
+
             if (kind === "insert" || kind === "upsert") {
               // Only set createdAt if not provided by user
               if (!("createdAt" in values)) {
@@ -755,37 +838,37 @@ const createEvoluInstance =
               }
             }
 
-            const dbChange = {
-              table,
-              id,
-              values,
-            };
-            assertValidDbChange(dbChange);
+            const dbChange = { table, id, values };
+            assert(
+              DbChange.is(dbChange),
+              `Failed to create DbChange for table "${dbChange.table}"`,
+            );
 
-            mutateMicrotaskQueue.push([dbChange, options?.onComplete]);
+            const mutationChange = { ...dbChange, ownerId: options?.ownerId };
+            mutateMicrotaskQueue.push([mutationChange, options?.onComplete]);
           }
 
           if (mutateMicrotaskQueue.length === 1)
             queueMicrotask(() => {
-              const changes: Array<DbChange> = [];
-              const onCompletes = [];
+              const changes: Array<MutationChange> = [];
+              const onCompleteCallbacks = [];
 
               for (const [change, onComplete] of mutateMicrotaskQueue) {
-                if (change) changes.push(change);
-                if (onComplete) onCompletes.push(onComplete);
+                if (change !== null) changes.push(change);
+                if (onComplete) onCompleteCallbacks.push(onComplete);
               }
 
-              const mutateMicrotaskQueueLength = mutateMicrotaskQueue.length;
+              const queueLength = mutateMicrotaskQueue.length;
               mutateMicrotaskQueue.length = 0;
 
-              // Don't mutate anything if there was a validation error.
-              // All mutations within a queue are considered to be a transaction.
-              if (changes.length !== mutateMicrotaskQueueLength) {
+              // Don't execute any mutations if there was a validation error.
+              // All mutations within a queue run as a single transaction.
+              if (changes.length !== queueLength) {
                 return;
               }
 
-              const onCompleteIds = onCompletes.map((onComplete) =>
-                callbacks.register(onComplete),
+              const onCompleteIds = onCompleteCallbacks.map(
+                onCompleteRegistry.register,
               );
 
               loadingPromises.releaseUnsubscribed();
@@ -816,24 +899,7 @@ const createEvoluInstance =
       subscribeError: errorStore.subscribe,
       getError: errorStore.get,
 
-      createQuery: (queryCallback, options) => {
-        const compiledQuery = queryCallback(
-          kysely as IntentionalNever,
-        ).compile();
-
-        if (isSqlMutation(compiledQuery.sql))
-          throw new Error(
-            "SQL mutation (INSERT, UPDATE, DELETE, etc.) isn't allowed in the Evolu `createQuery` function. Kysely suggests it because there is no read-only Kysely yet, and removing such an API is not possible. For mutations, use Evolu Mutation API.",
-          );
-
-        return serializeQuery({
-          sql: compiledQuery.sql as SafeSql,
-          parameters: compiledQuery.parameters as NonNullable<
-            SqliteQuery["parameters"]
-          >,
-          ...(options && { options }),
-        });
-      },
+      createQuery,
 
       loadQuery: <R extends Row>(query: Query<R>): Promise<QueryRows<R>> => {
         const { promise, isNew } = loadingPromises.get(query);
@@ -892,12 +958,8 @@ const createEvoluInstance =
       upsert: createMutation("upsert"),
 
       resetAppOwner: (options) => {
-        // Eslint bug, Promise<void> is correct by docs.
-        // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
-        const { promise, resolve } = Promise.withResolvers<void>();
-        const onCompleteId = callbacks.register(() => {
-          resolve();
-        });
+        const { promise, resolve } = Promise.withResolvers<undefined>();
+        const onCompleteId = onCompleteRegistry.register(resolve);
         dbWorker.postMessage({
           type: "reset",
           onCompleteId,
@@ -907,13 +969,8 @@ const createEvoluInstance =
       },
 
       restoreAppOwner: (mnemonic, options) => {
-        // Eslint bug, Promise<void> is correct by docs.
-        // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
-        const { promise, resolve } = Promise.withResolvers<void>();
-        const onCompleteId = callbacks.register(() => {
-          resolve();
-        });
-
+        const { promise, resolve } = Promise.withResolvers<undefined>();
+        const onCompleteId = onCompleteRegistry.register(resolve);
         dbWorker.postMessage({
           type: "reset",
           onCompleteId,
@@ -935,21 +992,88 @@ const createEvoluInstance =
 
       exportDatabase: () => {
         const { promise, resolve } = Promise.withResolvers<Uint8Array>();
-        const onCompleteId = callbacks.register((arg) => {
-          if (arg instanceof Uint8Array) resolve(arg);
-        });
+        const onCompleteId = exportRegistry.register(resolve);
         dbWorker.postMessage({ type: "export", onCompleteId });
         return promise;
+      },
+
+      useOwner: (owner) => {
+        const scheduleOwnerQueueProcessing = () => {
+          if (useOwnerMicrotaskQueue.length !== 1) return;
+          queueMicrotask(() => {
+            const queue = [...useOwnerMicrotaskQueue];
+            useOwnerMicrotaskQueue.length = 0;
+
+            const result: Array<[SyncOwner, boolean, Uint8Array]> = [];
+            const skipIndices = new Set<number>();
+
+            for (let i = 0; i < queue.length; i++) {
+              if (skipIndices.has(i)) continue;
+
+              const [currentOwner, currentUse, currentOwnerSerialized] =
+                queue[i];
+
+              // Look for opposite action with same owner
+              for (let j = i + 1; j < queue.length; j++) {
+                if (skipIndices.has(j)) continue;
+
+                const [, otherUse, otherOwnerSerialized] = queue[j];
+
+                if (
+                  currentUse !== otherUse &&
+                  eqArrayNumber(currentOwnerSerialized, otherOwnerSerialized)
+                ) {
+                  // Found cancel-out pair, skip both
+                  skipIndices.add(i).add(j);
+                  break;
+                }
+              }
+
+              if (!skipIndices.has(i)) {
+                result.push([currentOwner, currentUse, currentOwnerSerialized]);
+              }
+            }
+
+            for (const [owner, use] of result) {
+              dbWorker.postMessage({ type: "useOwner", owner, use });
+            }
+          });
+        };
+
+        useOwnerMicrotaskQueue.push([owner, true, pack(owner)]);
+        scheduleOwnerQueueProcessing();
+
+        const unuse = () => {
+          useOwnerMicrotaskQueue.push([owner, false, pack(owner)]);
+          scheduleOwnerQueueProcessing();
+        };
+
+        return unuse;
       },
     };
 
     return evolu;
   };
 
-export const createNamespaceName =
-  (config: Config) =>
-  (name: string): string =>
-    `evolu:${config.name}:${name}`;
+export const createQuery = <R extends Row>(
+  queryCallback: Parameters<CreateQuery<EvoluSchema>>[0],
+  options?: Parameters<CreateQuery<EvoluSchema>>[1],
+): Query<R> => {
+  const compiledQuery = queryCallback(kysely as IntentionalNever).compile();
+
+  if (isSqlMutation(compiledQuery.sql))
+    throw new Error(
+      "SQL mutation (INSERT, UPDATE, DELETE, etc.) isn't allowed in the Evolu `createQuery` function. Kysely suggests it because there is no read-only Kysely yet, and removing such an API is not possible. For mutations, use Evolu Mutation API.",
+    );
+
+  return serializeQuery({
+    sql: compiledQuery.sql as SafeSql,
+    parameters: compiledQuery.parameters as NonNullable<
+      SqliteQuery["parameters"]
+    >,
+    ...(options && { options }),
+  });
+};
 
 interface LoadingPromises {
   get: <R extends Row>(
@@ -1048,15 +1172,4 @@ const createLoadingPromises = (
   };
 
   return loadingPromises;
-};
-
-const assertValidDbChange: (dbChange: {
-  table: string;
-  id: Id;
-  values: unknown;
-}) => asserts dbChange is DbChange = (dbChange) => {
-  assert(
-    DbChange.is(dbChange),
-    `Failed to create DbChange for table "${dbChange.table}". If you see this message, you either disabled EvoluSchema validation or Evolu has a bug - please report it.`,
-  );
 };

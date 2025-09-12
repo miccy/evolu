@@ -1,5 +1,206 @@
+import { sha256 } from "@noble/hashes/sha2.js";
+import { NonEmptyReadonlyArray } from "../Array.js";
+import { assert } from "../Assert.js";
+import { Brand } from "../Brand.js";
+import { decrement } from "../Number.js";
+import { RandomDep } from "../Random.js";
+import { ok, Result } from "../Result.js";
+import { sql, SqliteDep, SqliteError, SqliteValue } from "../Sqlite.js";
+import {
+  Id,
+  Int64String,
+  NonNegativeInt,
+  object,
+  PositiveInt,
+  record,
+  String,
+} from "../Type.js";
+import {
+  BinaryOwnerId,
+  binaryOwnerIdToOwnerId,
+  Owner,
+  OwnerId,
+  WriteKey,
+} from "./Owner.js";
+import {
+  BinaryTimestamp,
+  orderBinaryTimestamp,
+  Timestamp,
+} from "./Timestamp.js";
+
 /**
- * Evolu Storage for SQLite
+ * Evolu Storage
+ *
+ * The protocol using Storage is agnostic to storage implementation details—any
+ * storage can be plugged in, as long as it implements this interface.
+ * Implementations must handle their own errors; return values only indicate
+ * overall success or failure.
+ *
+ * The Storage API is designed to be synchronous because SQLite's synchronous
+ * API is the recommended and most performant way to use SQLite. Asynchronous
+ * SQLite wrappers add unnecessary overhead and complexity. Only
+ * {@link Storage#writeMessages} is async because of SQLite WASM requirements
+ * (see its documentation for details).
+ */
+export interface Storage {
+  readonly getSize: (ownerId: BinaryOwnerId) => NonNegativeInt | null;
+
+  readonly fingerprint: (
+    ownerId: BinaryOwnerId,
+    begin: NonNegativeInt,
+    end: NonNegativeInt,
+  ) => Fingerprint | null;
+
+  /**
+   * Computes fingerprints with their upper bounds in one call.
+   *
+   * This function can be replaced with many fingerprint/findLowerBound calls,
+   * but implementations can leverage it for batching and more efficient
+   * fingerprint computation.
+   */
+  readonly fingerprintRanges: (
+    ownerId: BinaryOwnerId,
+    buckets: ReadonlyArray<NonNegativeInt>,
+    upperBound?: RangeUpperBound,
+  ) => ReadonlyArray<FingerprintRange> | null;
+
+  readonly findLowerBound: (
+    ownerId: BinaryOwnerId,
+    begin: NonNegativeInt,
+    end: NonNegativeInt,
+    upperBound: RangeUpperBound,
+  ) => NonNegativeInt | null;
+
+  readonly iterate: (
+    ownerId: BinaryOwnerId,
+    begin: NonNegativeInt,
+    end: NonNegativeInt,
+    callback: (timestamp: BinaryTimestamp, index: NonNegativeInt) => boolean,
+  ) => void;
+
+  /** Validates the {@link WriteKey} for the given {@link Owner}. */
+  readonly validateWriteKey: (
+    ownerId: BinaryOwnerId,
+    writeKey: WriteKey,
+  ) => boolean;
+
+  /** Sets the {@link WriteKey} for the given {@link Owner}. */
+  readonly setWriteKey: (ownerId: BinaryOwnerId, writeKey: WriteKey) => boolean;
+
+  /**
+   * Write encrypted {@link CrdtMessage}s to storage.
+   *
+   * Returns `Promise<boolean>` because SQLite WASM must run in a web worker
+   * while message validation must occur on the main thread. This requires async
+   * communication between worker and main thread.
+   *
+   * The async nature means other operations can interleave between
+   * `writeMessages` and subsequent sync operations during protocol message
+   * application. This is safe because storage is append-only and the only
+   * possible deletion is whole owner deletion. In that case, the sync operation
+   * must fail anyway (to prevent current and future sync operations).
+   */
+  readonly writeMessages: (
+    ownerId: BinaryOwnerId,
+    messages: NonEmptyReadonlyArray<EncryptedCrdtMessage>,
+  ) => Promise<boolean>;
+
+  /** Read encrypted {@link DbChange}s from storage. */
+  readonly readDbChange: (
+    ownerId: BinaryOwnerId,
+    timestamp: BinaryTimestamp,
+  ) => EncryptedDbChange | null;
+
+  /** Delete all data for the given {@link Owner}. */
+  readonly deleteOwner: (ownerId: BinaryOwnerId) => boolean;
+}
+
+export interface StorageDep {
+  readonly storage: Storage;
+}
+
+/**
+ * A cryptographic hash used for efficiently comparing collections of
+ * {@link BinaryTimestamp}s.
+ *
+ * It consists of the first {@link fingerprintSize} bytes of the SHA-256 hash of
+ * one or more timestamps.
+ */
+export type Fingerprint = Uint8Array & Brand<"Fingerprint">;
+
+export const fingerprintSize = 12 as NonNegativeInt;
+
+/** A fingerprint of an empty range. */
+export const zeroFingerprint = new Uint8Array(fingerprintSize) as Fingerprint;
+
+export interface BaseRange {
+  readonly upperBound: RangeUpperBound;
+}
+
+/**
+ * Union type for Range's upperBound: either a {@link BinaryTimestamp} or
+ * {@link InfiniteUpperBound}.
+ */
+export type RangeUpperBound = BinaryTimestamp | InfiniteUpperBound;
+
+export const InfiniteUpperBound = Symbol("InfiniteUpperBound");
+export type InfiniteUpperBound = typeof InfiniteUpperBound;
+
+export const RangeType = {
+  Fingerprint: 1,
+  Skip: 0,
+  Timestamps: 2,
+} as const;
+
+export type RangeType = (typeof RangeType)[keyof typeof RangeType];
+
+export interface SkipRange extends BaseRange {
+  readonly type: typeof RangeType.Skip;
+}
+
+export interface FingerprintRange extends BaseRange {
+  readonly type: typeof RangeType.Fingerprint;
+  readonly fingerprint: Fingerprint;
+}
+
+export interface TimestampsRange extends BaseRange {
+  readonly type: typeof RangeType.Timestamps;
+  readonly timestamps: ReadonlyArray<BinaryTimestamp>;
+}
+
+export type Range = SkipRange | FingerprintRange | TimestampsRange;
+
+/** An encrypted {@link CrdtMessage}. */
+export interface EncryptedCrdtMessage {
+  readonly timestamp: Timestamp;
+  readonly change: EncryptedDbChange;
+}
+
+/** Encrypted DbChange */
+export type EncryptedDbChange = Uint8Array & Brand<"EncryptedDbChange">;
+
+/**
+ * A CRDT message that combines a unique {@link Timestamp} with a
+ * {@link DbChange}.
+ */
+export interface CrdtMessage {
+  readonly timestamp: Timestamp;
+  readonly change: DbChange;
+}
+
+/**
+ * A DbChange is a change to a table row. Together with a unique
+ * {@link Timestamp}, it forms a {@link CrdtMessage}.
+ */
+export const DbChange = object({
+  table: String,
+  id: Id,
+  values: record(String, SqliteValue),
+});
+export type DbChange = typeof DbChange.Type;
+
+/**
+ * Common interface for both client and relay SQLite storages.
  *
  * Evolu uses a Skiplist, which leverages SQLite indexes. The core logic is
  * implemented in SQL, so it doesn't have to make roundtrips to the DB.
@@ -19,33 +220,7 @@
  * each other, if necessary. One relay should handle hundreds of thousands of
  * users, and when it goes down, nothing happens, because it will be
  * synchronized later.
- *
- * @module
  */
-
-import { assert } from "../Assert.js";
-import { decrement } from "../Number.js";
-import { RandomDep } from "../Random.js";
-import { ok, Result } from "../Result.js";
-import { sql, SqliteDep, SqliteError } from "../Sqlite.js";
-import { Int64String, NonNegativeInt, PositiveInt } from "../Type.js";
-import { Brand } from "../Brand.js";
-import { OwnerId } from "./Owner.js";
-import {
-  BinaryOwnerId,
-  binaryOwnerIdToOwnerId,
-  binaryTimestampToFingerprint,
-  Fingerprint,
-  FingerprintRange,
-  InfiniteUpperBound,
-  RangeType,
-  RangeUpperBound,
-  Storage,
-  zeroFingerprint,
-} from "./Protocol.js";
-import { BinaryTimestamp, orderBinaryTimestamp } from "./Timestamp.js";
-
-/** Common interface for both client and relay SQLite storages. */
 export interface SqliteStorageBase {
   readonly insertTimestamp: (
     ownerId: BinaryOwnerId,
@@ -64,7 +239,7 @@ export interface SqliteStorageBaseDep {
   readonly storage: SqliteStorageBase;
 }
 
-export type SqliteStorageDeps = SqliteDep & RandomDep;
+export type SqliteStorageDeps = RandomDep & SqliteDep;
 
 export interface CreateSqliteStorageBaseOptions {
   onStorageError: (error: SqliteError) => void;
@@ -818,6 +993,13 @@ const insertTimestamp =
 
     return ok();
   };
+
+export const binaryTimestampToFingerprint = (
+  timestamp: BinaryTimestamp,
+): Fingerprint => {
+  const hash = sha256(timestamp).slice(0, fingerprintSize);
+  return hash as Fingerprint;
+};
 
 /**
  * Generates a random skiplist level in the range [1, skiplistMaxLevel].

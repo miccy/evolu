@@ -1,12 +1,18 @@
 import { assert, expect, expectTypeOf, test } from "vitest";
+import { Brand } from "../src/Brand.js";
 import { constVoid } from "../src/Function.js";
+import { createNanoIdLib } from "../src/NanoId.js";
 import { err, ok } from "../src/Result.js";
 import {
   array,
   ArrayError,
   Base64Url,
+  Base64UrlError,
+  base64UrlToUint8Array,
   Between1And10,
   BigIntError,
+  BinaryId,
+  binaryIdToId,
   Boolean,
   BooleanError,
   brand,
@@ -26,6 +32,7 @@ import {
   Id,
   id,
   IdError,
+  idToBinaryId,
   InferError,
   InferInput,
   InferParent,
@@ -111,13 +118,14 @@ import {
   TypeError,
   TypeErrorFormatter,
   TypeErrors,
+  uint8ArrayToBase64Url,
   UndefinedError,
   undefinedOr,
   union,
   UnionError,
   Unknown,
+  UrlSafeString,
 } from "../src/Type.js";
-import { Brand } from "../src/Brand.js";
 import { testNanoIdLib } from "./_deps.js";
 
 test("Base Types", () => {
@@ -166,6 +174,23 @@ test("Base Types", () => {
   );
 
   // TODO: Test other Base Types.
+});
+
+test("fromOrThrow", () => {
+  expect(PositiveNumber.fromOrThrow(42)).toBe(42);
+  expect(() =>
+    PositiveNumber.fromOrThrow(-5),
+  ).toThrowErrorMatchingInlineSnapshot(`[Error: getOrThrow]`);
+
+  // Should work with complex types like our Duration example
+  const TestDuration = brand("TestDuration", NonNegativeInt);
+  type TestDuration = typeof TestDuration.Type;
+
+  const minutes = (m: number) => (m * 60 * 1000) as TestDuration;
+  const seconds = (s: number) => (s * 1000) as TestDuration;
+
+  const duration = TestDuration.fromOrThrow(minutes(1) + seconds(20));
+  expect(duration).toBe(80000); // 1 minute + 20 seconds = 80000ms
 });
 
 test("brand", () => {
@@ -694,47 +719,124 @@ test("regex", () => {
   expect(GlobalRegex.from("abc")).toEqual(ok("abc"));
 });
 
-test("Base64Url", () => {
-  expect(Base64Url.from("abc123_-")).toEqual(ok("abc123_-"));
-  expect(Base64Url.from("ABC123_-")).toEqual(ok("ABC123_-"));
+test("UrlSafeString", () => {
+  expect(UrlSafeString.from("abc123_-")).toEqual(ok("abc123_-"));
+  expect(UrlSafeString.from("ABC123_-")).toEqual(ok("ABC123_-"));
 
-  expect(Base64Url.from("abc!123")).toEqual(
-    err<RegexError<"Base64Url">>({
+  expect(UrlSafeString.from("abc!123")).toEqual(
+    err<RegexError<"UrlSafeString">>({
       type: "Regex",
-      name: "Base64Url",
+      name: "UrlSafeString",
       value: "abc!123",
       pattern: /^[A-Za-z0-9_-]+$/,
     }),
   );
-  expect(Base64Url.from("abc/123")).toEqual(
-    err<RegexError<"Base64Url">>({
+  expect(UrlSafeString.from("abc/123")).toEqual(
+    err<RegexError<"UrlSafeString">>({
       type: "Regex",
-      name: "Base64Url",
+      name: "UrlSafeString",
       value: "abc/123",
       pattern: /^[A-Za-z0-9_-]+$/,
     }),
   );
 
-  expect(Base64Url.to("abc123_-" as typeof Base64Url.Type)).toBe("abc123_-");
-  expect(Base64Url.toParent("abc123_-" as typeof Base64Url.Type)).toBe(
+  expect(UrlSafeString.to("abc123_-" as typeof UrlSafeString.Type)).toBe(
+    "abc123_-",
+  );
+  expect(UrlSafeString.toParent("abc123_-" as typeof UrlSafeString.Type)).toBe(
     "abc123_-",
   );
 
-  expect(Base64Url.is("abc123_-")).toBe(true);
-  expect(Base64Url.is("abc/123")).toBe(false);
+  expect(UrlSafeString.is("abc123_-")).toBe(true);
+  expect(UrlSafeString.is("abc/123")).toBe(false);
+
+  expect(UrlSafeString.name).toBe("Brand");
+  expect(UrlSafeString.brand).toBe("UrlSafeString");
+
+  expectTypeOf<typeof UrlSafeString.Type>().toEqualTypeOf<
+    string & Brand<"UrlSafeString">
+  >();
+  expectTypeOf<typeof UrlSafeString.Input>().toEqualTypeOf<string>();
+  expectTypeOf<typeof UrlSafeString.Error>().toEqualTypeOf<
+    RegexError<"UrlSafeString">
+  >();
+  expectTypeOf<typeof UrlSafeString.Parent>().toEqualTypeOf<string>();
+});
+
+test("Base64Url", () => {
+  // Valid Base64Url strings (length multiple of 4, URL-safe alphabet)
+  expect(Base64Url.from("ABCD")).toEqual(ok("ABCD")); // length 4
+  expect(Base64Url.from("SGVsbG8g")).toEqual(ok("SGVsbG8g")); // length 8
+
+  // Invalid characters (should fail at UrlSafeString level)
+  expect(Base64Url.from("SGVs!")).toEqual(
+    err<RegexError<"UrlSafeString">>({
+      type: "Regex",
+      name: "UrlSafeString",
+      value: "SGVs!",
+      pattern: /^[A-Za-z0-9_-]+$/,
+    }),
+  );
+
+  // Invalid length (not multiple of 4)
+  expect(Base64Url.from("SGV")).toEqual(
+    err<Base64UrlError>({
+      type: "Base64Url",
+      value: "SGV",
+    }),
+  );
+
+  expect(Base64Url.to("SGVs" as typeof Base64Url.Type)).toBe("SGVs");
+  expect(Base64Url.toParent("SGVs" as typeof Base64Url.Type)).toBe("SGVs");
+
+  expect(Base64Url.is("SGVs")).toBe(true);
+  expect(Base64Url.is("SGV")).toBe(false);
+  expect(Base64Url.is("SGVs!")).toBe(false);
 
   expect(Base64Url.name).toBe("Brand");
   expect(Base64Url.brand).toBe("Base64Url");
 
-  expectTypeOf<typeof Base64Url.Type>().toEqualTypeOf<
-    string & Brand<"Base64Url">
-  >();
+  expectTypeOf<typeof Base64Url.Type>().toEqualTypeOf<Base64Url>();
   expectTypeOf<typeof Base64Url.Input>().toEqualTypeOf<string>();
-  expectTypeOf<typeof Base64Url.Error>().toEqualTypeOf<
-    RegexError<"Base64Url">
+  expectTypeOf<typeof Base64Url.Parent>().toEqualTypeOf<
+    string & Brand<"UrlSafeString">
   >();
-  expectTypeOf<typeof Base64Url.Parent>().toEqualTypeOf<string>();
-  expectTypeOf<typeof Base64Url.ParentError>().toEqualTypeOf<StringError>();
+});
+
+test("base64UrlToUint8Array and uint8ArrayToBase64Url", () => {
+  // Test round-trip conversion
+  const originalBytes = new Uint8Array([72, 101, 108, 108, 111]); // "Hello"
+  const base64String = uint8ArrayToBase64Url(originalBytes);
+  const decodedBytes = base64UrlToUint8Array(base64String);
+
+  expect(decodedBytes).toEqual(originalBytes);
+  expect(base64String).toBe("SGVsbG8");
+
+  // Test with different data
+  const testData = [
+    new Uint8Array([1, 2, 3, 4]),
+    new Uint8Array([255, 254, 253]),
+    new Uint8Array([]),
+    new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+  ];
+
+  for (const bytes of testData) {
+    const encoded = uint8ArrayToBase64Url(bytes);
+    const decoded = base64UrlToUint8Array(encoded);
+    expect(decoded).toEqual(bytes);
+  }
+
+  // Test that the result is properly typed
+  expectTypeOf(base64String).toEqualTypeOf<Base64Url>();
+  expectTypeOf(decodedBytes).toEqualTypeOf<Uint8Array>();
+
+  // Test with known Base64Url values
+  expect(base64UrlToUint8Array("SGVsbG8" as Base64Url)).toEqual(
+    new Uint8Array([72, 101, 108, 108, 111]),
+  );
+  expect(uint8ArrayToBase64Url(new Uint8Array([72, 101, 108, 108, 111]))).toBe(
+    "SGVsbG8",
+  );
 });
 
 test("DateIsoString", () => {
@@ -757,6 +859,8 @@ test("DateIsoString", () => {
     "2022-12-01T25:00:00.000Z", // Invalid hour
     "2022-12-01T00:00:00.000", // Missing 'Z'
     "2022-12-01T00:00:00.000+01:00", // Timezone offset not allowed
+    // This was the failing case from property tests - should be rejected
+    `["0 (      ",-100000000]`, // JSON string that Date.parse accepts but isn't ISO format
   ];
 
   for (const date of invalidDates) {
@@ -938,7 +1042,7 @@ test("id", () => {
 
 test("createId", () => {
   const id = createId({ nanoIdLib: testNanoIdLib });
-  expect(id).toMatchInlineSnapshot(`"3C22DRVU0AHGjXpOEP-WJ"`);
+  expect(id).toMatchInlineSnapshot(`"LhGnhts9rNnUeri8bzhS5"`);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const todoId = createId<"Todo">({ nanoIdLib: testNanoIdLib });
@@ -950,7 +1054,7 @@ test("createId", () => {
 test("createIdFromString", () => {
   const id = createIdFromString("abc");
   expect(Id.is(id)).toBe(true);
-  expect(id).toEqual("QHMpZvrshcOs47aRxCvN-");
+  expect(id).toMatchInlineSnapshot(`"ungWv48Bz-pBQUDeXa4iI"`);
 
   const id1 = createIdFromString("user-api-123");
   const id2 = createIdFromString("user-api-123");
@@ -981,6 +1085,38 @@ test("createIdFromString", () => {
   const id3 = createIdFromString("test1");
   const id4 = createIdFromString("test2");
   expect(id3).not.toBe(id4);
+});
+
+test("BinaryId/idToBinaryId/binaryIdToId", () => {
+  const deps = { nanoIdLib: createNanoIdLib() };
+  for (let i = 0; i < 10000; i++) {
+    const originalId = createId(deps);
+    const binaryId = idToBinaryId(originalId);
+    expect(BinaryId.is(binaryId)).toBe(true);
+    expect(binaryIdToId(binaryId)).toBe(originalId);
+  }
+});
+
+test("BinaryId.fromParent with invalid data", () => {
+  const tooShort = new Uint8Array(15);
+  expect(BinaryId.fromParent(tooShort)).toEqual(
+    err({ type: "BinaryId", value: tooShort }),
+  );
+
+  const tooLong = new Uint8Array(17);
+  expect(BinaryId.fromParent(tooLong)).toEqual(
+    err({ type: "BinaryId", value: tooLong }),
+  );
+
+  const invalidBits = new Uint8Array(16);
+  invalidBits[15] = 0b11; // Set last 2 bits to 1
+  expect(BinaryId.fromParent(invalidBits)).toEqual(
+    err({ type: "BinaryId", value: invalidBits }),
+  );
+
+  const valid = new Uint8Array(16);
+  valid[15] = 0b00; // Ensure last 2 bits are zero
+  expect(BinaryId.fromParent(valid)).toEqual(ok(valid));
 });
 
 test("PositiveNumber", () => {

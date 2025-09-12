@@ -37,6 +37,44 @@ interface Example {
 }
 ```
 
+## Documentation & JSDoc
+
+- **Avoid `@param` and `@return` tags** - TypeScript provides type information, focus on describing the function's purpose
+- **Use `### Example` instead of `@example`** - for better markdown rendering and consistency
+- **Write clear descriptions** - explain what the function does, not how to use it
+
+````ts
+// ✅ Good
+/**
+ * Creates a new user with the provided data.
+ *
+ * ### Example
+ *
+ * ```ts
+ * const user = createUser({ name: "John", email: "john@example.com" });
+ * ```
+ */
+export const createUser = (data: UserData): User => {
+  // implementation
+};
+
+// ❌ Avoid
+/**
+ * Creates a new user with the provided data.
+ *
+ * @example
+ *   ```ts
+ *   const user = createUser({ name: "John", email: "john@example.com" });
+ *   ```;
+ *
+ * @param data The user data to create the user with
+ * @returns The created user
+ */
+export const createUser = (data: UserData): User => {
+  // implementation
+};
+````
+
 ## Error Handling with Result
 
 - Use `Result<T, E>` for business/domain errors in public APIs
@@ -150,9 +188,6 @@ assert(NonNegativeInt.is(length), "buffer length should be non-negative");
 // ✅ Good - Non-empty array assertion
 assertNonEmptyArray(items, "Expected items to process");
 
-// ✅ Good - Catch block for promises that shouldn't error
-Promise.resolve().catch((e) => assertNoErrorInCatch("WebSocket retry", e));
-
 // ❌ Avoid - Use Type validation instead
 // Don't use assert for runtime input validation
 ```
@@ -214,21 +249,44 @@ const deps: TimeDep & Partial<LoggerDep> = {
 
 - **Run tests using pnpm** - use `pnpm test` from the project root to run all tests
 - **Run specific test files** - use `pnpm test --filter @evolu/package-name -- test-file-pattern` from project root (e.g., `pnpm test --filter @evolu/common -- Protocol`)
+- **Check compilation** - use `pnpm build` to check TypeScript compilation across all packages
+- **Run linting** - use `pnpm lint` to check code style and linting rules
+- **Leverage `_deps.ts`** - use existing test utilities and mocks from `packages/common/test/_deps.ts` (e.g., `testCreateId`, `testTime`, `testOwner`)
 - Mock dependencies using the same interfaces
 - Create test factories (e.g., `createTestTime`)
 - Never rely on global state
 - Use assertions in tests for conditions that should never fail
 
 ```ts
+import { testCreateId, testTime, testOwner } from "../_deps.js";
+
 const createTestTime = (): Time => ({
   now: () => 1234567890, // Fixed time for testing
 });
 
 test("timeUntilEvent calculates correctly", () => {
-  const deps = { time: createTestTime() };
+  const deps = { time: testTime }; // Use from _deps.ts
   const result = timeUntilEvent(deps)(1234567990);
   assert(result === 100, "Expected result to be 100");
 });
+```
+
+## Git Commit Messages
+
+- **Write as sentences** - use proper sentence case without trailing period
+- **No prefixes** - avoid `feat:`, `fix:`, `feature:` etc.
+- **Be descriptive** - explain what the change does
+
+```bash
+# ✅ Good
+Add support for custom error formatters
+Fix memory leak in WebSocket reconnection
+Update schema validation to handle edge cases
+
+# ❌ Avoid
+feat: add support for custom error formatters
+fix: memory leak in websocket reconnection
+Update schema validation to handle edge cases.
 ```
 
 When suggesting code changes, ensure they follow these patterns and conventions.

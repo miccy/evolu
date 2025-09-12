@@ -21,12 +21,15 @@
  * | **Header**                     |                           |
  * | - {@link protocolVersion}      |                           |
  * | - {@link OwnerId}              | {@link Owner}             |
- * | **Initiator**                  |                           |
- * | - {@link WriteKeyMode}         |                           |
- * | - {@link WriteKey}             | If WriteKeyMode >= 1      |
- * | - {@link WriteKey}             | If WriteKeyMode = 2 (new) |
- * | **Non-initiator**              |                           |
+ * | - messageType                  | {@link MessageType}       |
+ * | **Request (messageType=0)**    |                           |
+ * | - hasWriteKey                  | 0 = no, 1 = yes           |
+ * | - {@link WriteKey}             | If hasWriteKey = 1        |
+ * | - subscriptionFlag             | {@link SubscriptionFlags} |
+ * | **Response (messageType=1)**   |                           |
  * | - {@link ProtocolErrorCode}    |                           |
+ * | **Broadcast (messageType=2)**  |                           |
+ * | - (no additional fields)       |                           |
  * | **Messages**                   |                           |
  * | - {@link NonNegativeInt}       | A number of messages.     |
  * | - {@link EncryptedCrdtMessage} |                           |
@@ -36,19 +39,12 @@
  *
  * ### WriteKey Validation
  *
- * The initiator sends WriteKeyMode and optionally one or two WriteKeys. One key
- * for write operations and two for key rotation (current and new). Note that
- * it's ok to not send any key if initiator is going to be synced with readonly
- * owner. The non-initiator validates them immediately after parsing the
- * initiator header, before processing any messages or ranges.
- *
- * ### WriteKey Rotation
- *
- * When initiator's {@link WriteKeyMode} is `Rotation`, two WriteKeys are
- * present:
- *
- * 1. Current WriteKey (for validation)
- * 2. New WriteKey (to be stored)
+ * The initiator sends a hasWriteKey flag and optionally a WriteKey. The
+ * WriteKey is required when sending messages as a secure token proving the
+ * initiator can write changes. It's ok to not send any key if the initiator is
+ * only syncing (read-only) and not sending messages. The non-initiator
+ * validates the WriteKey immediately after parsing the initiator header, before
+ * processing any messages or ranges.
  *
  * ### Synchronization
  *
@@ -69,13 +65,13 @@
  * Both **Messages** and **Ranges** are optional, allowing each side to send,
  * sync, or only subscribe data as needed.
  *
- * When the initiator sends data, the {@link WriteKey} is required in Messages as
- * a secure token proving the initiator can write changes. The non-initiator
- * responds without a {@link WriteKey}, since the initiator’s request already
- * signals it wants data. If the non-initiator detects an issue, it sends an
- * error code via the `Error` field in the header back to the initiator. In
- * relay-to-relay or P2P sync, both sides may require the {@link WriteKey}
- * depending on who is the initiator.
+ * When the initiator sends data, the {@link WriteKey} is required as a secure
+ * token proving the initiator can write changes. The non-initiator responds
+ * without a {@link WriteKey}, since the initiator’s request already signals it
+ * wants data. If the non-initiator detects an issue, it sends an error code via
+ * the `Error` field in the header back to the initiator. In relay-to-relay or
+ * P2P sync, both sides may require the {@link WriteKey} depending on who is the
+ * initiator.
  *
  * ### Protocol Errors
  *
@@ -111,7 +107,6 @@
  * serialization formats with the following optimizations:
  *
  * - **NonNegativeInt:** Up to 33% smaller than MessagePack.
- * - **Base64Url Strings:** Up to 25% size reduction.
  * - **DateIso:** Up to 75% smaller.
  * - **Timestamp Encoding:** Delta encoding for milliseconds and run-length
  *   encoding (RLE) for counters and NodeIds.
@@ -144,10 +139,10 @@
  * @module
  */
 
-import { sha256 } from "@noble/hashes/sha2";
-import { pack, unpack, unpackMultiple } from "msgpackr";
+import { Packr } from "msgpackr";
 import { isNonEmptyReadonlyArray, NonEmptyReadonlyArray } from "../Array.js";
 import { assert } from "../Assert.js";
+import { Brand } from "../Brand.js";
 import {
   Buffer,
   bytesToHex,
@@ -157,9 +152,9 @@ import {
   utf8ToBytes,
 } from "../Buffer.js";
 import {
-  CreateRandomBytesDep,
   EncryptionKey,
   padmePaddingLength,
+  RandomBytesDep,
   SymmetricCryptoDecryptError,
   SymmetricCryptoDep,
 } from "../Crypto.js";
@@ -170,22 +165,45 @@ import { err, ok, Result } from "../Result.js";
 import { SqliteValue } from "../Sqlite.js";
 import {
   Base64Url,
-  base64UrlAlphabet,
+  base64UrlToUint8Array,
+  BinaryId,
+  binaryIdToId,
+  binaryIdTypeValueLength,
   DateIsoString,
   Id,
-  idTypeValueLength,
+  idToBinaryId,
   JsonValueFromString,
-  maxLength,
-  NanoId,
   NonNegativeInt,
   Number,
-  object,
   PositiveInt,
-  record,
+  uint8ArrayToBase64Url,
 } from "../Type.js";
 import { Predicate } from "../Types.js";
-import { Brand } from "../Brand.js";
-import { Owner, OwnerId, WriteKey, writeKeyLength } from "./Owner.js";
+import {
+  BinaryOwnerId,
+  Owner,
+  OwnerId,
+  ownerIdToBinaryOwnerId,
+  WriteKey,
+  writeKeyLength,
+} from "./Owner.js";
+import {
+  BaseRange,
+  CrdtMessage,
+  DbChange,
+  EncryptedCrdtMessage,
+  EncryptedDbChange,
+  Fingerprint,
+  FingerprintRange,
+  fingerprintSize,
+  InfiniteUpperBound,
+  Range,
+  RangeType,
+  RangeUpperBound,
+  SkipRange,
+  StorageDep,
+  TimestampsRange,
+} from "./Storage.js";
 import {
   BinaryTimestamp,
   binaryTimestampLength,
@@ -197,6 +215,14 @@ import {
   Timestamp,
   timestampToBinaryTimestamp,
 } from "./Timestamp.js";
+
+/**
+ * MessagePack serializer for standard compatibility and compact encoding.
+ *
+ * - `variableMapSize: true` - More compact maps, ~5-10% slower encoding
+ * - `useRecords: false` - Standard MessagePack without extensions
+ */
+const packr = new Packr({ variableMapSize: true, useRecords: false });
 
 /** Maximum size of the entire protocol message in bytes. */
 export const maxProtocolMessageSize = 1_000_000 as PositiveInt;
@@ -210,6 +236,29 @@ export type ProtocolMessage = Uint8Array & Brand<"ProtocolMessage">;
 /** Evolu Protocol version. */
 export const protocolVersion = 0 as NonNegativeInt;
 
+export const MessageType = {
+  /** Request message from initiator (client) to non-initiator (relay). */
+  Request: 0,
+  /** Response message from non-initiator (relay) to initiator (client). */
+  Response: 1,
+  /** Broadcast message from non-initiator (relay) to subscribed clients. */
+  Broadcast: 2,
+} as const;
+
+export type MessageType = (typeof MessageType)[keyof typeof MessageType];
+
+export const SubscriptionFlags = {
+  /** No subscription changes for this owner. */
+  None: 0,
+  /** Subscribe to updates for this owner. */
+  Subscribe: 1,
+  /** Unsubscribe from updates for this owner. */
+  Unsubscribe: 2,
+} as const;
+
+export type SubscriptionFlag =
+  (typeof SubscriptionFlags)[keyof typeof SubscriptionFlags];
+
 export const ProtocolErrorCode = {
   NoError: 0,
   /** A code for {@link ProtocolWriteKeyError}. */
@@ -222,179 +271,6 @@ export const ProtocolErrorCode = {
 
 type ProtocolErrorCode =
   (typeof ProtocolErrorCode)[keyof typeof ProtocolErrorCode];
-
-export const WriteKeyMode = {
-  None: 0,
-  Single: 1,
-  Rotation: 2,
-} as const;
-
-type WriteKeyMode = (typeof WriteKeyMode)[keyof typeof WriteKeyMode];
-
-/**
- * Evolu Protocol Storage
- *
- * The protocol is agnostic to storage implementation details—any storage can be
- * plugged in, as long as it implements this interface. Implementations must
- * handle their own errors; return values only indicates overall success or
- * failure.
- */
-export interface Storage {
-  readonly getSize: (ownerId: BinaryOwnerId) => NonNegativeInt | null;
-
-  readonly fingerprint: (
-    ownerId: BinaryOwnerId,
-    begin: NonNegativeInt,
-    end: NonNegativeInt,
-  ) => Fingerprint | null;
-
-  /**
-   * Computes fingerprints with their upper bounds in one call.
-   *
-   * This function can be replaced with many fingerprint/findLowerBound calls,
-   * but implementations can leverage it for batching and more efficient
-   * fingerprint computation.
-   */
-  readonly fingerprintRanges: (
-    ownerId: BinaryOwnerId,
-    buckets: ReadonlyArray<NonNegativeInt>,
-    upperBound?: RangeUpperBound,
-  ) => ReadonlyArray<FingerprintRange> | null;
-
-  readonly findLowerBound: (
-    ownerId: BinaryOwnerId,
-    begin: NonNegativeInt,
-    end: NonNegativeInt,
-    upperBound: RangeUpperBound,
-  ) => NonNegativeInt | null;
-
-  readonly iterate: (
-    ownerId: BinaryOwnerId,
-    begin: NonNegativeInt,
-    end: NonNegativeInt,
-    callback: (timestamp: BinaryTimestamp, index: NonNegativeInt) => boolean,
-  ) => void;
-
-  /** Validates the {@link WriteKey} for the given {@link Owner}. */
-  readonly validateWriteKey: (
-    ownerId: BinaryOwnerId,
-    writeKey: WriteKey,
-  ) => boolean;
-
-  /** Sets the {@link WriteKey} for the given {@link Owner}. */
-  readonly setWriteKey: (ownerId: BinaryOwnerId, writeKey: WriteKey) => boolean;
-
-  /** Write encrypted {@link CrdtMessage}s to storage. */
-  readonly writeMessages: (
-    ownerId: BinaryOwnerId,
-    messages: NonEmptyReadonlyArray<EncryptedCrdtMessage>,
-  ) => boolean;
-
-  /** Read encrypted {@link DbChange}s from storage. */
-  readonly readDbChange: (
-    ownerId: BinaryOwnerId,
-    timestamp: BinaryTimestamp,
-  ) => EncryptedDbChange | null;
-
-  /** Delete all data for the given {@link Owner}. */
-  readonly deleteOwner: (ownerId: BinaryOwnerId) => boolean;
-}
-
-export interface StorageDep {
-  readonly storage: Storage;
-}
-
-/** An encrypted {@link CrdtMessage}. */
-export interface EncryptedCrdtMessage {
-  readonly timestamp: Timestamp;
-  readonly change: EncryptedDbChange;
-}
-
-/** Encrypted DbChange */
-export type EncryptedDbChange = Uint8Array & Brand<"EncryptedDbChange">;
-
-/**
- * A CRDT message that combines a unique {@link Timestamp} with a
- * {@link DbChange}.
- */
-export interface CrdtMessage {
-  readonly timestamp: Timestamp;
-  readonly change: DbChange;
-}
-
-/**
- * Base64Url string with maximum length of 256 characters. Encoding strings as
- * Base64UrlString saves up to 25% in size compared to regular strings.
- */
-export const Base64Url256 = maxLength(256)(Base64Url);
-export type Base64Url256 = typeof Base64Url256.Type;
-
-/**
- * A DbChange is a change to a table row. Together with a unique
- * {@link Timestamp}, it forms a {@link CrdtMessage}.
- */
-export const DbChange = object({
-  table: Base64Url256,
-  id: Id,
-  values: record(Base64Url256, SqliteValue),
-});
-export type DbChange = typeof DbChange.Type;
-
-export const RangeType = {
-  Fingerprint: 1,
-  Skip: 0,
-  Timestamps: 2,
-} as const;
-
-export type RangeType = (typeof RangeType)[keyof typeof RangeType];
-
-export const InfiniteUpperBound = Symbol("InfiniteUpperBound");
-export type InfiniteUpperBound = typeof InfiniteUpperBound;
-
-/**
- * Union type for Range's upperBound: either a {@link BinaryTimestamp} or
- * {@link InfiniteUpperBound}.
- */
-export type RangeUpperBound = BinaryTimestamp | InfiniteUpperBound;
-
-interface BaseRange {
-  readonly upperBound: RangeUpperBound;
-}
-
-export interface SkipRange extends BaseRange {
-  readonly type: typeof RangeType.Skip;
-}
-
-export interface FingerprintRange extends BaseRange {
-  readonly type: typeof RangeType.Fingerprint;
-  readonly fingerprint: Fingerprint;
-}
-
-/**
- * A cryptographic hash used for efficiently comparing collections of
- * {@link BinaryTimestamp}s.
- *
- * It consists of the first {@link fingerprintSize} bytes of the SHA-256 hash of
- * one or more timestamps.
- */
-export type Fingerprint = Uint8Array & Brand<"Fingerprint">;
-
-export const fingerprintSize = 12 as NonNegativeInt;
-
-/** A fingerprint of an empty range. */
-export const zeroFingerprint = new Uint8Array(fingerprintSize) as Fingerprint;
-
-export interface TimestampsRange extends BaseRange {
-  readonly type: typeof RangeType.Timestamps;
-  readonly timestamps: ReadonlyArray<BinaryTimestamp>;
-}
-
-export interface TimestampsRangeWithTimestampsBuffer extends BaseRange {
-  readonly type: typeof RangeType.Timestamps;
-  readonly timestamps: TimestampsBuffer;
-}
-
-export type Range = SkipRange | FingerprintRange | TimestampsRange;
 
 export type ProtocolError =
   | ProtocolUnsupportedVersionError
@@ -467,14 +343,14 @@ export interface ProtocolTimestampMismatchError {
  * unidirectional and stateless transports.
  */
 export const createProtocolMessageFromCrdtMessages =
-  (deps: SymmetricCryptoDep & CreateRandomBytesDep) =>
+  (deps: RandomBytesDep & SymmetricCryptoDep) =>
   (
     owner: Owner,
     messages: NonEmptyReadonlyArray<CrdtMessage>,
     maxSize?: PositiveInt,
   ): ProtocolMessage => {
     const buffer = createProtocolMessageBuffer(owner.id, {
-      type: "initiator",
+      messageType: MessageType.Request,
       totalMaxSize: maxSize ?? maxProtocolMessageSize,
       writeKey: owner.writeKey,
     });
@@ -511,7 +387,7 @@ export const createProtocolMessageFromCrdtMessages =
        * For now, using a random fingerprint avoids extra complexity and is good
        * enough for this case.
        */
-      const randomFingerprint = deps.createRandomBytes(
+      const randomFingerprint = deps.randomBytes.create(
         fingerprintSize,
       ) as unknown as Fingerprint;
 
@@ -529,8 +405,14 @@ export const createProtocolMessageFromCrdtMessages =
 /** Creates a {@link ProtocolMessage} for sync. */
 export const createProtocolMessageForSync =
   (deps: StorageDep) =>
-  (ownerId: OwnerId): ProtocolMessage | null => {
-    const buffer = createProtocolMessageBuffer(ownerId, { type: "initiator" });
+  (
+    ownerId: OwnerId,
+    subscriptionFlag?: SubscriptionFlag,
+  ): ProtocolMessage | null => {
+    const buffer = createProtocolMessageBuffer(ownerId, {
+      messageType: MessageType.Request,
+      subscriptionFlag: subscriptionFlag ?? SubscriptionFlags.None,
+    });
     const binaryOwnerId = ownerIdToBinaryOwnerId(ownerId);
 
     const size = deps.storage.getSize(binaryOwnerId);
@@ -548,18 +430,13 @@ export const createProtocolMessageForSync =
     return buffer.unwrap();
   };
 
-/** Creates a ProtocolMessage for {@link WriteKey} rotation. */
-export const createProtocolMessageForWriteKeyRotation = (
+export const createProtocolMessageForUnsubscribe = (
   ownerId: OwnerId,
-  currentWriteKey: WriteKey,
-  newWriteKey: WriteKey,
-): ProtocolMessage => {
-  const buffer = createProtocolMessageBuffer(ownerId, {
-    type: "initiator",
-    writeKey: [currentWriteKey, newWriteKey],
-  });
-  return buffer.unwrap();
-};
+): ProtocolMessage =>
+  createProtocolMessageBuffer(ownerId, {
+    messageType: MessageType.Request,
+    subscriptionFlag: SubscriptionFlags.Unsubscribe,
+  }).unwrap();
 
 /**
  * Mutable builder for constructing {@link ProtocolMessage} respecting size
@@ -593,13 +470,16 @@ export const createProtocolMessageBuffer = (
     readonly version?: NonNegativeInt;
   } & (
     | {
-        readonly type: "initiator";
-        /** Single key or [current, new] for rotation. */
-        readonly writeKey?: WriteKey | readonly [WriteKey, WriteKey];
+        readonly messageType: typeof MessageType.Request;
+        readonly writeKey?: WriteKey;
+        readonly subscriptionFlag?: SubscriptionFlag;
       }
     | {
-        readonly type: "non-initiator";
+        readonly messageType: typeof MessageType.Response;
         readonly errorCode: ProtocolErrorCode;
+      }
+    | {
+        readonly messageType: typeof MessageType.Broadcast;
       }
   ),
 ): ProtocolMessageBuffer => {
@@ -624,19 +504,18 @@ export const createProtocolMessageBuffer = (
 
   encodeNonNegativeInt(buffers.header, version);
   buffers.header.extend(ownerIdToBinaryOwnerId(ownerId));
+  buffers.header.extend([options.messageType]);
 
-  if (options.type === "initiator") {
+  if (options.messageType === MessageType.Request) {
     if (!options.writeKey) {
-      buffers.header.extend([WriteKeyMode.None]);
-    } else if (!Array.isArray(options.writeKey)) {
-      buffers.header.extend([WriteKeyMode.Single]);
-      buffers.header.extend(options.writeKey as WriteKey);
+      buffers.header.extend([0]);
     } else {
-      buffers.header.extend([WriteKeyMode.Rotation]);
-      buffers.header.extend(options.writeKey[0] as WriteKey); // current
-      buffers.header.extend(options.writeKey[1] as WriteKey); // new
+      buffers.header.extend([1]);
+      buffers.header.extend(options.writeKey);
     }
-  } else {
+    const subscriptionFlag = options.subscriptionFlag ?? SubscriptionFlags.None;
+    buffers.header.extend([subscriptionFlag]);
+  } else if (options.messageType === MessageType.Response) {
     buffers.header.extend([options.errorCode]);
   }
 
@@ -720,9 +599,14 @@ export const createProtocolMessageBuffer = (
 
     addRange: (range) => {
       assert(
+        options.messageType !== MessageType.Broadcast,
+        "Cannot add a range into broadcast message",
+      );
+      assert(
         !isLastRangeInfinite,
         "Cannot add a range after an InfiniteUpperBound range",
       );
+
       isLastRangeInfinite = range.upperBound === InfiniteUpperBound;
 
       /**
@@ -778,6 +662,11 @@ export const createProtocolMessageBuffer = (
     getSize,
   };
 };
+
+export interface TimestampsRangeWithTimestampsBuffer extends BaseRange {
+  readonly type: typeof RangeType.Timestamps;
+  readonly timestamps: TimestampsBuffer;
+}
 
 export interface TimestampsBuffer {
   readonly add: (timestamp: Timestamp) => void;
@@ -889,31 +778,53 @@ export interface ApplyProtocolMessageAsClientOptions {
   rangesMaxSize?: PositiveInt;
 }
 
+/**
+ * Result type for {@link applyProtocolMessageAsClient} that distinguishes
+ * between responses to client requests and broadcast messages.
+ */
+export type ApplyProtocolMessageAsClientResult =
+  | { readonly type: "response"; readonly message: ProtocolMessage }
+  | { readonly type: "no-response" }
+  | { readonly type: "broadcast" };
+
 export const applyProtocolMessageAsClient =
   (deps: StorageDep) =>
-  (
+  async (
     inputMessage: Uint8Array,
-    {
-      getWriteKey,
-      version = protocolVersion,
-      totalMaxSize,
-      rangesMaxSize,
-    }: ApplyProtocolMessageAsClientOptions = {},
-  ): Result<ProtocolMessage | null, ProtocolError> =>
-    tryDecodeProtocolData<ProtocolMessage | null, ProtocolError>(
-      inputMessage,
-      (input) => {
-        const [requestedVersion, ownerId] = decodeVersionAndOwner(input);
+    options: ApplyProtocolMessageAsClientOptions = {},
+  ): Promise<
+    Result<
+      ApplyProtocolMessageAsClientResult,
+      | ProtocolInvalidDataError
+      | ProtocolSyncError
+      | ProtocolUnsupportedVersionError
+      | ProtocolWriteError
+      | ProtocolWriteKeyError
+    >
+  > => {
+    // try-catch instead of Result for performance and stacktraces
+    try {
+      const input = createBuffer(inputMessage);
+      const [requestedVersion, ownerId] = decodeVersionAndOwner(input);
+      const version = options.version ?? protocolVersion;
 
-        if (requestedVersion !== version) {
-          return err<ProtocolUnsupportedVersionError>({
-            type: "ProtocolUnsupportedVersionError",
-            unsupportedVersion: requestedVersion,
-            isInitiator: version < requestedVersion,
-            ownerId,
-          });
-        }
+      if (requestedVersion !== version) {
+        return err<ProtocolUnsupportedVersionError>({
+          type: "ProtocolUnsupportedVersionError",
+          unsupportedVersion: requestedVersion,
+          isInitiator: version < requestedVersion,
+          ownerId,
+        });
+      }
 
+      const messageType = input.shift() as MessageType;
+      assert(
+        messageType === MessageType.Response ||
+          messageType === MessageType.Broadcast,
+        "Invalid MessageType",
+      );
+
+      if (messageType === MessageType.Response) {
         const errorCode = input.shift() as ProtocolErrorCode;
         if (errorCode !== ProtocolErrorCode.NoError) {
           switch (errorCode) {
@@ -938,35 +849,69 @@ export const applyProtocolMessageAsClient =
               );
           }
         }
+      }
 
-        const messages = decodeMessages(input);
-        const binaryOwnerId = ownerIdToBinaryOwnerId(ownerId);
+      const messages = decodeMessages(input);
+      const binaryOwnerId = ownerIdToBinaryOwnerId(ownerId);
 
-        if (
-          isNonEmptyReadonlyArray(messages) &&
-          !deps.storage.writeMessages(binaryOwnerId, messages)
-        ) {
-          return ok(null);
-        }
+      if (
+        isNonEmptyReadonlyArray(messages) &&
+        !(await deps.storage.writeMessages(binaryOwnerId, messages))
+      ) {
+        return ok({ type: "no-response" });
+      }
 
-        if (!getWriteKey) return ok(null);
-        const writeKey = getWriteKey(ownerId);
-        if (writeKey == null) return ok(null);
+      // Now: No writeKey, no sync.
+      // TODO: Allow to sync SharedReadonlyOwner
+      // Without local changes, writeKey will not be required.
+      // With local changes, writeKey will be required and if not provided,
+      // the sync should stop.
+      // getWriteKey should be moved to sync fn.
+      const writeKey = options.getWriteKey?.(ownerId);
+      if (writeKey == null) {
+        return ok({ type: "no-response" });
+      }
 
-        const output = createProtocolMessageBuffer(ownerId, {
-          type: "initiator",
-          writeKey,
-          totalMaxSize,
-          rangesMaxSize,
-        });
+      if (messageType === MessageType.Broadcast) {
+        return ok({ type: "broadcast" });
+      }
 
-        return sync(deps)("initiator", input, output, binaryOwnerId);
-      },
-    );
+      const ranges = decodeRanges(input);
+
+      if (!isNonEmptyReadonlyArray(ranges)) {
+        return ok({ type: "no-response" });
+      }
+
+      const output = createProtocolMessageBuffer(ownerId, {
+        messageType: MessageType.Request,
+        writeKey,
+        totalMaxSize: options.totalMaxSize,
+        rangesMaxSize: options.rangesMaxSize,
+      });
+
+      const syncResult = sync(deps)(ranges, output, binaryOwnerId);
+
+      // Client sync error (handled via Storage) or no changes.
+      if (!syncResult.ok || !syncResult.value) {
+        return ok({ type: "no-response" });
+      }
+
+      return ok({ type: "response", message: output.unwrap() });
+    } catch (error) {
+      return err<ProtocolInvalidDataError>({
+        type: "ProtocolInvalidDataError",
+        data: inputMessage,
+        error,
+      });
+    }
+  };
 
 export interface ApplyProtocolMessageAsRelayOptions {
   /** To subscribe an owner for broadcasting. */
   subscribe?: (ownerId: OwnerId) => void;
+
+  /** To unsubscribe an owner from broadcasting. */
+  unsubscribe?: (ownerId: OwnerId) => void;
 
   /** To broadcast a protocol message to all subscribers. */
   broadcast?: (ownerId: OwnerId, message: ProtocolMessage) => void;
@@ -975,20 +920,33 @@ export interface ApplyProtocolMessageAsRelayOptions {
   rangesMaxSize?: PositiveInt;
 }
 
+/**
+ * Result type for {@link applyProtocolMessageAsRelay}.
+ *
+ * Unlike {@link ApplyProtocolMessageAsClientResult}, relays always respond with
+ * a message to provide sync completion feedback. This ensures the initiator can
+ * reliably detect when synchronization is complete, even when there's nothing
+ * to sync. Clients may choose not to respond in certain cases (like when they
+ * receive broadcast messages or when they lack a write key for syncing).
+ */
+export interface ApplyProtocolMessageAsRelayResult {
+  readonly type: "response";
+  readonly message: ProtocolMessage;
+}
+
 export const applyProtocolMessageAsRelay =
   (deps: StorageDep) =>
-  (
+  async (
     inputMessage: Uint8Array,
-    {
-      subscribe,
-      broadcast,
-      totalMaxSize,
-      rangesMaxSize,
-    }: ApplyProtocolMessageAsRelayOptions = {},
+    options: ApplyProtocolMessageAsRelayOptions = {},
     /** For testing purposes only; should not be used in production. */
     version = protocolVersion,
-  ): Result<ProtocolMessage | null, ProtocolInvalidDataError> =>
-    tryDecodeProtocolData(inputMessage, (input) => {
+  ): Promise<
+    Result<ApplyProtocolMessageAsRelayResult, ProtocolInvalidDataError>
+  > => {
+    // try-catch instead of Result for performance and stacktraces
+    try {
+      const input = createBuffer(inputMessage);
       const [requestedVersion, ownerId] = decodeVersionAndOwner(input);
       const binaryOwnerId = ownerIdToBinaryOwnerId(ownerId);
 
@@ -997,121 +955,131 @@ export const applyProtocolMessageAsRelay =
         const output = createBuffer();
         encodeNonNegativeInt(output, version);
         output.extend(binaryOwnerId);
-        return ok(output.unwrap() as ProtocolMessage);
+        return ok({
+          type: "response",
+          message: output.unwrap() as ProtocolMessage,
+        });
       }
 
-      subscribe?.(ownerId);
+      const messageType = input.shift() as MessageType;
+      assert(messageType === MessageType.Request, "Invalid MessageType");
 
-      const writeKeyMode = input.shift() as WriteKeyMode;
+      const hasWriteKey = input.shift();
       let writeKey: WriteKey | undefined;
-      let newWriteKey: WriteKey | undefined;
 
-      if (writeKeyMode !== WriteKeyMode.None) {
+      if (hasWriteKey === 1) {
         writeKey = input.shiftN(writeKeyLength) as WriteKey;
-        switch (writeKeyMode) {
-          case WriteKeyMode.Single:
-            break;
-          case WriteKeyMode.Rotation:
-            newWriteKey = input.shiftN(writeKeyLength) as WriteKey;
-            break;
-          default:
-            throw new ProtocolDecodeError(
-              `Invalid WriteKeyMode: ${writeKeyMode}`,
-            );
-        }
+      }
+
+      const subscriptionFlag = input.shift() as SubscriptionFlag;
+
+      switch (subscriptionFlag) {
+        case SubscriptionFlags.Subscribe:
+          options.subscribe?.(ownerId);
+          break;
+        case SubscriptionFlags.Unsubscribe:
+          options.unsubscribe?.(ownerId);
+          break;
+        case SubscriptionFlags.None:
+          break;
       }
 
       if (writeKey) {
         const isValid = deps.storage.validateWriteKey(binaryOwnerId, writeKey);
         if (!isValid) {
-          return ok(
-            createProtocolMessageBuffer(ownerId, {
-              type: "non-initiator",
+          return ok({
+            type: "response",
+            message: createProtocolMessageBuffer(ownerId, {
+              messageType: MessageType.Response,
               errorCode: ProtocolErrorCode.WriteKeyError,
             }).unwrap(),
-          );
-        }
-
-        if (newWriteKey) {
-          const rotationSuccess = deps.storage.setWriteKey(
-            binaryOwnerId,
-            newWriteKey,
-          );
-          if (!rotationSuccess) {
-            return ok(
-              createProtocolMessageBuffer(ownerId, {
-                type: "non-initiator",
-                errorCode: ProtocolErrorCode.WriteError,
-              }).unwrap(),
-            );
-          }
+          });
         }
       }
 
       const messages = decodeMessages(input);
 
       if (isNonEmptyReadonlyArray(messages)) {
-        if (!writeKey)
-          return ok(
-            createProtocolMessageBuffer(ownerId, {
-              type: "non-initiator",
+        if (!writeKey) {
+          return ok({
+            type: "response",
+            message: createProtocolMessageBuffer(ownerId, {
+              messageType: MessageType.Response,
               errorCode: ProtocolErrorCode.WriteKeyError,
             }).unwrap(),
-          );
+          });
+        }
 
-        // Only broadcast if there's no ranges.
-        if (broadcast && input.getLength() === 0) {
+        /**
+         * Broadcast messages to all subscribed devices. This ensures real-time
+         * synchronization between clients.
+         *
+         * When a relay's database is deleted or clients migrate to a new relay
+         * (without data migration), clients will sync their data to the relay,
+         * and the relay will broadcast those messages to other connected
+         * clients. Those clients may receive messages they already have, but
+         * this is safe because `applyMessages` is idempotent. As the relay
+         * becomes more synchronized with clients over time, fewer duplicate
+         * messages will be broadcasted.
+         */
+        if (options.broadcast) {
           const broadcastBuffer = createProtocolMessageBuffer(ownerId, {
-            type: "non-initiator",
-            errorCode: ProtocolErrorCode.NoError,
-            totalMaxSize,
-            rangesMaxSize,
+            messageType: MessageType.Broadcast,
+            totalMaxSize: options.totalMaxSize,
+            rangesMaxSize: options.rangesMaxSize,
             version,
           });
           for (const message of messages) {
             broadcastBuffer.addMessage(message);
           }
-          broadcast(ownerId, broadcastBuffer.unwrap());
+          options.broadcast(ownerId, broadcastBuffer.unwrap());
         }
 
-        if (!deps.storage.writeMessages(binaryOwnerId, messages))
-          return ok(
-            createProtocolMessageBuffer(ownerId, {
-              type: "non-initiator",
+        if (!(await deps.storage.writeMessages(binaryOwnerId, messages))) {
+          return ok({
+            type: "response",
+            message: createProtocolMessageBuffer(ownerId, {
+              messageType: MessageType.Response,
               errorCode: ProtocolErrorCode.WriteError,
             }).unwrap(),
-          );
+          });
+        }
       }
 
+      const ranges = decodeRanges(input);
+
       const output = createProtocolMessageBuffer(ownerId, {
-        type: "non-initiator",
+        messageType: MessageType.Response,
         errorCode: ProtocolErrorCode.NoError,
-        totalMaxSize,
-        rangesMaxSize,
+        totalMaxSize: options.totalMaxSize,
+        rangesMaxSize: options.rangesMaxSize,
       });
 
-      return sync(deps)("non-initiator", input, output, binaryOwnerId);
-    });
+      // Non-initiators always respond to provide sync completion feedback,
+      // even when there's nothing to sync.
+      if (!isNonEmptyReadonlyArray(ranges)) {
+        return ok({ type: "response", message: output.unwrap() });
+      }
 
-/**
- * Wraps Evolu Protocol decoding functions, which use exceptions instead of
- * {@link Result} to provide stack traces for debugging and reduce allocation
- * overhead in success cases.
- */
-const tryDecodeProtocolData = <T, E>(
-  data: Uint8Array,
-  callback: (buffer: Buffer) => Result<T, E | ProtocolInvalidDataError>,
-) => {
-  try {
-    return callback(createBuffer(data));
-  } catch (error: unknown) {
-    return err<ProtocolInvalidDataError>({
-      type: "ProtocolInvalidDataError",
-      data,
-      error,
-    });
-  }
-};
+      const syncResult = sync(deps)(ranges, output, binaryOwnerId);
+
+      const message = syncResult.ok
+        ? output.unwrap()
+        : createProtocolMessageBuffer(ownerId, {
+            messageType: MessageType.Response,
+            errorCode: syncResult.error,
+          }).unwrap();
+
+      // Non-initiators always respond to provide sync completion feedback,
+      return ok({ type: "response", message });
+    } catch (error) {
+      return err<ProtocolInvalidDataError>({
+        type: "ProtocolInvalidDataError",
+        data: inputMessage,
+        error,
+      });
+    }
+  };
 
 const decodeVersionAndOwner = (input: Buffer): [NonNegativeInt, OwnerId] => {
   // This structure must never change across protocol versions. The version
@@ -1119,7 +1087,7 @@ const decodeVersionAndOwner = (input: Buffer): [NonNegativeInt, OwnerId] => {
   // to enable version negotiation and owner identification before any other
   // processing occurs.
   const version = decodeNonNegativeInt(input);
-  const ownerId = decodeOwnerId(input);
+  const ownerId = decodeId(input) as OwnerId;
   return [version, ownerId];
 };
 
@@ -1154,40 +1122,14 @@ const decodeMessages = (
 const sync =
   (deps: StorageDep) =>
   (
-    role: "initiator" | "non-initiator",
-    input: Buffer,
+    ranges: NonEmptyReadonlyArray<Range>,
     output: ProtocolMessageBuffer,
-    ownerId: BinaryOwnerId,
-  ): Result<ProtocolMessage | null, never> => {
-    const ranges = decodeRanges(input);
-
-    if (!isNonEmptyReadonlyArray(ranges)) {
-      // Non-initiators always respond to provide sync completion feedback,
-      // even when there's nothing to sync.
-      if (role === "non-initiator") {
-        return ok(output.unwrap());
-      }
-      // Nothing to sync.
-      return ok(null);
-    }
-
-    const binaryOwnerId = binaryOwnerIdToOwnerId(ownerId);
+    binaryOwnerId: BinaryOwnerId,
+  ): Result<boolean, typeof ProtocolErrorCode.SyncError> => {
     const outputInitialSize = output.getSize();
 
-    const syncFail = () => {
-      // Only the relay (non-initiator) reports sync errors, not the client (initiator).
-      if (role === "initiator") {
-        return ok(null);
-      }
-      const message = createProtocolMessageBuffer(binaryOwnerId, {
-        type: "non-initiator",
-        errorCode: ProtocolErrorCode.SyncError,
-      });
-      return ok(message.unwrap());
-    };
-
-    const storageSize = deps.storage.getSize(ownerId);
-    if (storageSize == null) return syncFail();
+    const storageSize = deps.storage.getSize(binaryOwnerId);
+    if (storageSize == null) return err(ProtocolErrorCode.SyncError);
 
     let prevUpperBound: RangeUpperBound | null = null;
     let prevIndex = 0 as NonNegativeInt;
@@ -1227,7 +1169,11 @@ const sync =
     const addFingerprintForRemainingRange = (
       begin: NonNegativeInt,
     ): boolean => {
-      const fingerprint = deps.storage.fingerprint(ownerId, begin, storageSize);
+      const fingerprint = deps.storage.fingerprint(
+        binaryOwnerId,
+        begin,
+        storageSize,
+      );
       if (!fingerprint) return false;
       // There is always a space for a ramaining range.
       output.addRange({
@@ -1243,12 +1189,12 @@ const sync =
 
       const lower = prevIndex;
       let upper = deps.storage.findLowerBound(
-        ownerId,
+        binaryOwnerId,
         prevIndex,
         storageSize,
         currentUpperBound,
       );
-      if (upper == null) return syncFail();
+      if (upper == null) return err(ProtocolErrorCode.SyncError);
 
       switch (range.type) {
         case RangeType.Skip: {
@@ -1258,11 +1204,11 @@ const sync =
 
         case RangeType.Fingerprint: {
           const ourFingerprint = deps.storage.fingerprint(
-            ownerId,
+            binaryOwnerId,
             lower,
             upper,
           );
-          if (ourFingerprint == null) return syncFail();
+          if (ourFingerprint == null) return err(ProtocolErrorCode.SyncError);
 
           if (eqArrayNumber(range.fingerprint, ourFingerprint)) {
             skipRange(range);
@@ -1270,15 +1216,16 @@ const sync =
             if (output.canSplitRange()) {
               coalesceSkipsBeforeAdd();
               splitRange(deps)(
-                ownerId,
+                binaryOwnerId,
                 lower,
                 upper,
                 currentUpperBound,
                 output,
               );
             } else {
-              if (!addFingerprintForRemainingRange(upper)) return syncFail();
-              return ok(output.unwrap());
+              return addFingerprintForRemainingRange(upper)
+                ? ok(true)
+                : err(ProtocolErrorCode.SyncError);
             }
           }
           break;
@@ -1292,45 +1239,53 @@ const sync =
           );
           const ourTimestamps = createTimestampsBuffer();
 
-          let storageError = false as boolean;
+          let cantReadDbChange = false as boolean;
           let exceeded = false as boolean;
 
-          deps.storage.iterate(ownerId, lower, upper, (timestamp, index) => {
-            const timestampString = timestamp.join();
-            const timestampBinary = binaryTimestampToTimestamp(timestamp);
+          deps.storage.iterate(
+            binaryOwnerId,
+            lower,
+            upper,
+            (timestamp, index) => {
+              const timestampString = timestamp.join();
+              const timestampBinary = binaryTimestampToTimestamp(timestamp);
 
-            let message: EncryptedCrdtMessage | null = null;
+              let message: EncryptedCrdtMessage | null = null;
 
-            if (timestampsWeNeed.has(timestampString)) {
-              timestampsWeNeed.delete(timestampString);
-            } else {
-              const dbChange = deps.storage.readDbChange(ownerId, timestamp);
-              if (dbChange == null) {
-                storageError = true;
+              if (timestampsWeNeed.has(timestampString)) {
+                timestampsWeNeed.delete(timestampString);
+              } else {
+                const dbChange = deps.storage.readDbChange(
+                  binaryOwnerId,
+                  timestamp,
+                );
+                if (dbChange == null) {
+                  cantReadDbChange = true;
+                  return false;
+                }
+                message = {
+                  timestamp: timestampBinary,
+                  change: dbChange,
+                };
+              }
+
+              if (
+                !output.canAddTimestampsRangeAndMessage(ourTimestamps, message)
+              ) {
+                exceeded = true;
+                endBound = timestamp;
+                upper = index;
                 return false;
               }
-              message = {
-                timestamp: timestampBinary,
-                change: dbChange,
-              };
-            }
 
-            if (
-              !output.canAddTimestampsRangeAndMessage(ourTimestamps, message)
-            ) {
-              exceeded = true;
-              endBound = timestamp;
-              upper = index;
-              return false;
-            }
+              ourTimestamps.add(timestampBinary);
+              if (message) output.addMessage(message);
+              return true;
+            },
+          );
 
-            ourTimestamps.add(timestampBinary);
-            if (message) output.addMessage(message);
-            return true;
-          });
-
-          if (storageError) {
-            return syncFail();
+          if (cantReadDbChange) {
+            return err(ProtocolErrorCode.SyncError);
           }
 
           const addRange = () => {
@@ -1345,9 +1300,9 @@ const sync =
           if (exceeded) {
             addRange();
             if (!addFingerprintForRemainingRange(upper)) {
-              return syncFail();
+              return err(ProtocolErrorCode.SyncError);
             }
-            return ok(output.unwrap());
+            return ok(true);
           }
 
           // If we need something, we have to respond with our timestamps.
@@ -1368,13 +1323,7 @@ const sync =
     // If all ranges were skipped, there are no changes and sync is complete.
     const hasChange = output.getSize() > outputInitialSize;
 
-    // Non-initiators always respond to provide sync completion feedback,
-    // even with empty messages. This allows clients to detect sync completion.
-    if (role === "non-initiator" && !hasChange) {
-      return ok(output.unwrap());
-    }
-
-    return ok(hasChange ? output.unwrap() : null);
+    return ok(hasChange);
   };
 
 const splitRange =
@@ -1550,120 +1499,34 @@ const decodeTimestamps = (
   return timestamps;
 };
 
-/** Binary representation of {@link Id}. */
-export type BinaryId = Uint8Array & Brand<"BinaryId">;
+const decodeId = (buffer: Buffer): Id => {
+  const bytes = buffer.shiftN(binaryIdTypeValueLength);
+  const binaryId = BinaryId.fromParent(bytes);
+  if (!binaryId.ok) throw new ProtocolDecodeError(binaryId.error.type);
 
-export const binaryIdLength = 16 as NonNegativeInt;
-
-export const idToBinaryId = (id: Id): BinaryId =>
-  base64Url256ToBytes(id) as BinaryId;
-
-export const binaryIdToId = (binaryId: BinaryId): Id =>
-  decodeId(createBuffer(binaryId));
-
-/** Binary representation of {@link OwnerId}. */
-export type BinaryOwnerId = Uint8Array & Brand<"BinaryOwnerId">;
-
-export const ownerIdToBinaryOwnerId = (ownerId: OwnerId): BinaryOwnerId =>
-  base64Url256ToBytes(ownerId) as BinaryOwnerId;
-
-export const binaryOwnerIdToOwnerId = (binaryOwnerId: BinaryOwnerId): OwnerId =>
-  decodeOwnerId(createBuffer(binaryOwnerId));
-
-/**
- * Union type for all variants of Base64Url strings with limited length. All
- * these types use Base64Url alphabet and are < 256 characters.
- */
-export type Base64Url256Variant = Base64Url256 | Id | NanoId | OwnerId;
-
-/**
- * Converts a Base64Url string to a Uint8Array for binary storage. This encoding
- * is more space-efficient than UTF-8 for Base64Url strings.
- */
-export const base64Url256ToBytes = (
-  string: Base64Url256Variant,
-): globalThis.Uint8Array => {
-  const totalBits = string.length * 6; // 6 bits per character
-  const byteLength = Math.ceil(totalBits / 8);
-  const value = new globalThis.Uint8Array(byteLength);
-
-  let bitBuffer = 0;
-  let bitsInBuffer = 0;
-  let byteIndex = 0;
-
-  for (const char of string) {
-    const charValue = base64UrlAlphabet.indexOf(char);
-    bitBuffer = (bitBuffer << 6) | charValue;
-    bitsInBuffer += 6;
-    while (bitsInBuffer >= 8) {
-      bitsInBuffer -= 8;
-      value[byteIndex++] = (bitBuffer >> bitsInBuffer) & 0xff;
-    }
-  }
-
-  if (bitsInBuffer > 0 && byteIndex < byteLength) {
-    value[byteIndex] = (bitBuffer << (8 - bitsInBuffer)) & 0xff;
-  }
-
-  return value;
+  return binaryIdToId(binaryId.value);
 };
-
-export const decodeBase64Url256 = (
-  buffer: Buffer,
-  stringLength: number,
-): Base64Url256Variant => {
-  const bytes = buffer.shiftN(
-    Math.ceil((stringLength * 6) / 8) as NonNegativeInt,
-  );
-
-  let bitBuffer = 0;
-  let bitsInBuffer = 0;
-  let string = "";
-
-  for (const byte of bytes) {
-    bitBuffer = (bitBuffer << 8) | byte;
-    bitsInBuffer += 8;
-    while (bitsInBuffer >= 6) {
-      bitsInBuffer -= 6;
-      if (string.length < stringLength) {
-        const charValue = (bitBuffer >> bitsInBuffer) & 0x3f;
-        if (charValue < 0 || charValue >= base64UrlAlphabet.length) {
-          throw new ProtocolDecodeError("invalid charValue");
-        }
-        string += base64UrlAlphabet[charValue];
-      }
-    }
-  }
-
-  const result = Base64Url256.from(string);
-  if (!result.ok) throw new ProtocolDecodeError(result.error.type);
-
-  return result.value;
-};
-
-const decodeId = (buffer: Buffer): Id =>
-  decodeBase64Url256(buffer, idTypeValueLength) as Id;
-
-/** Not all 16 bytes are valid {@link OwnerId}. */
-const decodeOwnerId = (buffer: Buffer): OwnerId => decodeId(buffer) as OwnerId;
 
 /**
  * Evolu uses MessagePack to handle all number variants except for
  * NonNegativeInt. For NonNegativeInt, Evolu provides more efficient encoding.
  */
 export const encodeNumber = (buffer: Buffer, number: number): void => {
-  buffer.extend(pack(number));
+  buffer.extend(packr.pack(number));
 };
 
 export const decodeNumber = (buffer: Buffer): number => {
   let number: unknown;
   let end: unknown;
 
-  unpackMultiple(buffer.unwrap(), (n, _, e) => {
-    number = n;
-    end = e;
-    return false;
-  });
+  packr.unpackMultiple(
+    buffer.unwrap(),
+    (n: unknown, _: unknown, e: unknown) => {
+      number = n;
+      end = e;
+      return false;
+    },
+  );
 
   const endResult = NonNegativeInt.fromUnknown(end);
   if (!endResult.ok) throw new ProtocolDecodeError(endResult.error.type);
@@ -1673,13 +1536,6 @@ export const decodeNumber = (buffer: Buffer): number => {
 
   buffer.shiftN(endResult.value);
   return numberResult.value;
-};
-
-export const binaryTimestampToFingerprint = (
-  timestamp: BinaryTimestamp,
-): Fingerprint => {
-  const hash = sha256(timestamp).slice(0, fingerprintSize);
-  return hash as Fingerprint;
 };
 
 /**
@@ -1703,12 +1559,12 @@ export const encodeAndEncryptDbChange =
     const binaryTimestamp = timestampToBinaryTimestamp(message.timestamp);
     buffer.extend(binaryTimestamp);
 
-    encodeBase64Url256(buffer, change.table);
+    encodeString(buffer, change.table);
 
     buffer.extend(idToBinaryId(change.id));
 
     const entries = objectToEntries(change.values).map(
-      ([column, value]): [Base64Url256, SqliteValue] => {
+      ([column, value]): [string, SqliteValue] => {
         return [column, value];
       },
     );
@@ -1716,7 +1572,7 @@ export const encodeAndEncryptDbChange =
     encodeLength(buffer, entries);
 
     for (const [column, value] of entries) {
-      encodeBase64Url256(buffer, column);
+      encodeString(buffer, column);
       encodeSqliteValue(buffer, value);
     }
 
@@ -1752,11 +1608,10 @@ export const decryptAndDecodeDbChange =
     | SymmetricCryptoDecryptError
     | ProtocolInvalidDataError
     | ProtocolTimestampMismatchError
-  > =>
-    tryDecodeProtocolData<
-      DbChange,
-      SymmetricCryptoDecryptError | ProtocolTimestampMismatchError
-    >(message.change, (buffer) => {
+  > => {
+    // try-catch instead of Result for performance and stacktraces
+    try {
+      const buffer = createBuffer(message.change);
       const nonce = buffer.shiftN(deps.symmetricCrypto.nonceLength);
 
       const ciphertextLength = decodeLength(buffer);
@@ -1792,14 +1647,14 @@ export const decryptAndDecodeDbChange =
         });
       }
 
-      const table = decodeBase64Url256WithLength(buffer);
+      const table = decodeString(buffer);
       const id = decodeId(buffer);
 
       const length = decodeLength(buffer);
       const values = Object.create(null) as Record<string, SqliteValue>;
 
       for (let i = 0; i < length; i++) {
-        const column = decodeBase64Url256WithLength(buffer);
+        const column = decodeString(buffer);
         const value = decodeSqliteValue(buffer);
         values[column] = value;
       }
@@ -1807,7 +1662,14 @@ export const decryptAndDecodeDbChange =
       const dbChange = { table, id, values };
 
       return ok(dbChange);
-    });
+    } catch (error) {
+      return err<ProtocolInvalidDataError>({
+        type: "ProtocolInvalidDataError",
+        data: message.change,
+        error,
+      });
+    }
+  };
 
 /**
  * Encodes a non-negative integer into a variable-length integer format. It's
@@ -1891,19 +1753,6 @@ export const decodeNodeId = (buffer: Buffer): NodeId => {
   return bytesToHex(bytes) as NodeId;
 };
 
-export const encodeBase64Url256 = (
-  buffer: Buffer,
-  string: Base64Url256Variant,
-): void => {
-  encodeLength(buffer, string);
-  buffer.extend(base64Url256ToBytes(string));
-};
-
-export const decodeBase64Url256WithLength = (buffer: Buffer): Base64Url256 => {
-  const length = decodeLength(buffer);
-  return decodeBase64Url256(buffer, length) as Base64Url256;
-};
-
 // Small ints are encoded into ProtocolValueType, saving one byte per int.
 const isSmallInt: Predicate<number> = (value: number) =>
   value >= 0 && value < 20;
@@ -1919,16 +1768,19 @@ export const ProtocolValueType = {
   // We can add more types for other DBs or anything else later.
 
   // Optimized types
-  Id: 30 as NonNegativeInt,
-  Base64Url256: 31 as NonNegativeInt,
-  NonNegativeInt: 32 as NonNegativeInt,
-  Json: 33 as NonNegativeInt,
+  NonNegativeInt: 30 as NonNegativeInt,
+
+  // String optimizations
+  EmptyString: 31 as NonNegativeInt, // 1 byte vs 2 bytes (50% reduction)
+  Base64Url: 32 as NonNegativeInt,
+  Id: 33 as NonNegativeInt,
+  Json: 34 as NonNegativeInt,
 
   // new Date().toISOString()   - 24 bytes
   // encoded with fixed length  - 8 bytes
   // encode as NonNegativeInt   - 6 bytes (additional 25% reduction)
-  DateIsoWithNonNegativeTime: 34 as NonNegativeInt,
-  DateIsoWithNegativeTime: 35 as NonNegativeInt, // 9 bytes
+  DateIsoWithNonNegativeTime: 35 as NonNegativeInt,
+  DateIsoWithNegativeTime: 36 as NonNegativeInt, // 9 bytes
 
   // TODO: Operations (from 40)
   // Increment, Decrement, Patch, whatever.
@@ -1942,6 +1794,11 @@ export const encodeSqliteValue = (buffer: Buffer, value: SqliteValue): void => {
 
   switch (typeof value) {
     case "string": {
+      if (value === "") {
+        encodeNonNegativeInt(buffer, ProtocolValueType.EmptyString);
+        return;
+      }
+
       const dateIsoString = DateIsoString.from(value);
       if (dateIsoString.ok) {
         const time = new Date(dateIsoString.value).getTime();
@@ -1961,24 +1818,27 @@ export const encodeSqliteValue = (buffer: Buffer, value: SqliteValue): void => {
         return;
       }
 
-      const base64Url256 = Base64Url256.from(value);
-      if (base64Url256.ok) {
-        if (base64Url256.value.length === idTypeValueLength) {
-          encodeNonNegativeInt(buffer, ProtocolValueType.Id);
-          buffer.extend(base64Url256ToBytes(base64Url256.value));
-          return;
-        }
-        encodeNonNegativeInt(buffer, ProtocolValueType.Base64Url256);
-        encodeBase64Url256(buffer, base64Url256.value);
+      const id = Id.from(value);
+      if (id.ok) {
+        encodeNonNegativeInt(buffer, ProtocolValueType.Id);
+        buffer.extend(idToBinaryId(id.value));
         return;
       }
 
       const jsonValue = JsonValueFromString.fromParent(value);
-      if (jsonValue.ok) {
-        const jsonBytes = pack(jsonValue.value);
+      if (jsonValue.ok && JSON.stringify(jsonValue.value) === value) {
+        const jsonBytes = packr.pack(jsonValue.value);
         encodeNonNegativeInt(buffer, ProtocolValueType.Json);
         encodeLength(buffer, jsonBytes);
         buffer.extend(jsonBytes);
+        return;
+      }
+
+      if (Base64Url.is(value)) {
+        encodeNonNegativeInt(buffer, ProtocolValueType.Base64Url);
+        const bytes = base64UrlToUint8Array(value);
+        encodeLength(buffer, bytes);
+        buffer.extend(bytes);
         return;
       }
 
@@ -2018,26 +1878,30 @@ export const decodeSqliteValue = (buffer: Buffer): SqliteValue => {
   switch (type) {
     case ProtocolValueType.String:
       return decodeString(buffer);
+
     case ProtocolValueType.Number:
       return decodeNumber(buffer);
+
     case ProtocolValueType.Null:
       return null;
+
     case ProtocolValueType.Binary: {
       const length = decodeLength(buffer);
       return buffer.shiftN(length);
     }
-    case ProtocolValueType.Id: {
+
+    case ProtocolValueType.Id:
       return decodeId(buffer);
-    }
-    case ProtocolValueType.Base64Url256:
-      return decodeBase64Url256WithLength(buffer);
+
     case ProtocolValueType.NonNegativeInt:
       return decodeNonNegativeInt(buffer);
+
     case ProtocolValueType.Json: {
       const length = decodeLength(buffer);
       const bytes = buffer.shiftN(length);
-      return JSON.stringify(unpack(bytes));
+      return JSON.stringify(packr.unpack(bytes));
     }
+
     case ProtocolValueType.DateIsoWithNonNegativeTime:
     case ProtocolValueType.DateIsoWithNegativeTime: {
       const time =
@@ -2051,6 +1915,16 @@ export const decodeSqliteValue = (buffer: Buffer): SqliteValue => {
         throw new ProtocolDecodeError(dateIsoString.error.type);
       return dateIsoString.value;
     }
+
+    case ProtocolValueType.EmptyString:
+      return "";
+
+    case ProtocolValueType.Base64Url: {
+      const length = decodeLength(buffer);
+      const bytes = buffer.shiftN(length);
+      return uint8ArrayToBase64Url(bytes);
+    }
+
     default:
       throw new ProtocolDecodeError("invalid ProtocolValueType");
   }

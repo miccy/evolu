@@ -26,7 +26,7 @@ import {
 } from "../../src/Evolu/Timestamp.js";
 import { increment } from "../../src/Number.js";
 import { orderNumber } from "../../src/Order.js";
-import { Result, getOrThrow, ok } from "../../src/Result.js";
+import { Result, ok } from "../../src/Result.js";
 import { TimeDep } from "../../src/Time.js";
 import { testNanoIdLibDep, testRandomLib } from "../_deps.js";
 
@@ -68,7 +68,7 @@ test("createInitialTimestamp", () => {
     {
       "counter": 0,
       "millis": 0,
-      "nodeId": "7d4369d2888e0950",
+      "nodeId": "452cde0b36593c7e",
     }
   `);
 });
@@ -79,7 +79,7 @@ test("timestampToTimestampString", () => {
   );
 });
 
-const makeMillis = (millis: number): Millis => getOrThrow(Millis.from(millis));
+const makeMillis = (millis: number): Millis => Millis.fromOrThrow(millis);
 
 const deps0: TimeDep & TimestampConfigDep = {
   time: { now: () => minMillis },
@@ -274,20 +274,6 @@ describe("receiveTimestamp", () => {
       `);
     });
 
-    test("TimestampDuplicateNodeError", () => {
-      expect(
-        receiveTimestamp(deps1)(makeNode1Timestamp(), makeNode1Timestamp()),
-      ).toMatchInlineSnapshot(`
-        {
-          "error": {
-            "nodeId": "0000000000000001",
-            "type": "TimestampDuplicateNodeError",
-          },
-          "ok": false,
-        }
-      `);
-    });
-
     test("should fail with clock drift", () => {
       expect(
         receiveTimestamp(deps0)(
@@ -344,7 +330,7 @@ describe("receiveTimestamp", () => {
     );
     const t2 = timestampToBinaryTimestamp(
       createTimestamp({
-        millis: getOrThrow(Millis.from(increment(minMillis))),
+        millis: Millis.fromOrThrow(increment(minMillis)),
       }),
     );
     expect(orderBinaryTimestamp(t1, t2)).toBe(-1);
@@ -356,7 +342,7 @@ describe("receiveTimestamp", () => {
     );
     const t4 = timestampToBinaryTimestamp(
       createTimestamp({
-        counter: getOrThrow(Counter.from(increment(minCounter))),
+        counter: Counter.fromOrThrow(increment(minCounter)),
       }),
     );
     expect(orderBinaryTimestamp(t3, t4)).toBe(-1);

@@ -4,14 +4,16 @@
  * The problem with throwing an exception in JavaScript is that the caught error
  * is always of an unknown type. The unknown type is a problem because we can't
  * be sure all errors have been handled because the TypeScript compiler can't
- * tell us. Some other languages like Rust 🦀 or Haskell 📚 use a type-safe
- * approach to error handling, where errors are explicitly represented as part
- * of the return type, such as Result or Either, allowing the developer to
- * handle all errors safely. ✅
+ * tell us.
  *
- * This type models that approach in TypeScript. A `Result` can be either
- * {@link Ok} (success) or {@link Err} (error). Use {@link ok} to create a
- * successful result and {@link err} to create an error result.
+ * Languages like Rust 🦀 or Haskell 📚 use a type-safe approach to error
+ * handling, where errors are explicitly represented as part of the return type,
+ * such as Result or Either, allowing the developer to handle errors safely.
+ * TypeScript can have this too via the `Result` type.
+ *
+ * The `Result` type can be either {@link Ok} (success) or {@link Err} (error).
+ * Use {@link ok} to create a successful result and {@link err} to create an error
+ * result.
  *
  * Now let's look at how `Result` can be used for safe JSON parsing:
  *
@@ -58,12 +60,10 @@
  *
  * Let's summarize it:
  *
- * - For synchronous safe code, use `ok` and `err`.
+ * - For safe code, use `ok` and `err`.
  * - For unsafe code, use `trySync` or `tryAsync`.
- * - For asynchronous safe code, use `Promise` with {@link Result}.
  *
- * Asynchronous safe (because of a Promise using Result) code is
- * straightforward:
+ * Asynchronous safe (because of a Promise using Result) code:
  *
  * ```ts
  * const fetchUser = async (
@@ -84,9 +84,33 @@
  * };
  * ```
  *
- * ## Examples
+ * ### Naming Convention
  *
- * ### Sequential Operations with Short-Circuiting
+ * - For values: `const user = getUser()`
+ * - For void operations: `const result = foo()` (unless it would clash)
+ * - For clashes, suffix the name: `const saveResult = save()`
+ *
+ * ```ts
+ * const processUser = () => {
+ *   // we have a value
+ *   const user = getUser();
+ *   if (!user.ok) return user;
+ *
+ *   // void operation
+ *   const result = saveToDatabase(user.value);
+ *   if (!result.ok) return result;
+ *
+ *   // avoiding clash
+ *   const deleteFromCacheResult = deleteFromCache();
+ *   if (!deleteFromCacheResult.ok) return deleteFromCacheResult;
+ *
+ *   return ok();
+ * };
+ * ```
+ *
+ * ### Examples
+ *
+ * #### Sequential Operations with Short-Circuiting
  *
  * When performing a sequence of operations where any failure should stop
  * further processing, use the `Result` type with early returns.
@@ -136,30 +160,108 @@
  * This approach ensures type-safe error handling, avoids nested try/catch
  * blocks, and clearly communicates the control flow.
  *
- * ### A function with two different errors:
+ * #### A function with two different errors:
  *
  * ```ts
  * const example = (value: string): Result<number, FooError | BarError> => {
  *   const foo = getFoo(value);
  *   if (!foo.ok) return foo;
  *
- *   const bar = barize(foo.value);
+ *   const bar = getBar(foo.value);
  *   if (!bar.ok) return bar;
  *
  *   return ok(barToNumber(bar.value));
  * };
  * ```
  *
- * ## FAQ
+ * ### Handling Unexpected Errors
  *
- * ### What if my function doesn't return a value on success?
+ * Even with disciplined use of `trySync` and `tryAsync`, unexpected errors can
+ * still occur due to programming mistakes, third-party library bugs, or edge
+ * cases. These should be logged for debugging while maintaining application
+ * stability.
+ *
+ * #### In Browser Environments
+ *
+ * ```ts
+ * // Global error handler for unexpected errors
+ * window.addEventListener("error", (event) => {
+ *   console.error("Uncaught error:", event.error);
+ *   // Send to error reporting service
+ *   errorReportingService.report(event.error);
+ * });
+ *
+ * // For unhandled promise rejections
+ * window.addEventListener("unhandledrejection", (event) => {
+ *   console.error("Unhandled promise rejection:", event.reason);
+ *   errorReportingService.report(event.reason);
+ * });
+ * ```
+ *
+ * #### In Node.js Environments
+ *
+ * ```ts
+ * // Handle uncaught exceptions (avoid process crash)
+ * process.on("uncaughtException", (error) => {
+ *   console.error("Uncaught exception:", error);
+ *   errorReportingService.report(error);
+ *   // Gracefully shutdown if needed
+ *   process.exit(1);
+ * });
+ *
+ * // Handle unhandled promise rejections
+ * process.on("unhandledRejection", (reason) => {
+ *   console.error("Unhandled promise rejection:", reason);
+ *   errorReportingService.report(reason);
+ * });
+ * ```
+ *
+ * These global handlers serve as a safety net for unexpected errors while
+ * maintaining the discipline of explicit error handling through the `Result`
+ * pattern.
+ *
+ * ### FAQ
+ *
+ * #### What if my function doesn't return a value on success?
  *
  * If your function performs an operation but doesn't need to return a value on
  * success, you can use `Result<void, E>`. Using `Result<void, E>` is clearer
  * than using `Result<true, E>` or `Result<null, E>` because it communicates
  * that the function doesn't produce a value but can produce errors.
  *
- * ### How do I short-circuit processing of an array on the first error?
+ * #### When can a function return `void` instead of `Result<void, E>`?
+ *
+ * A function can safely return `void` (instead of `Result<void, E>`) when all
+ * unsafe code within it is properly wrapped with `trySync` or `tryAsync`. If
+ * developers consistently wrap all potentially throwing operations, then any
+ * function returning `void` is guaranteed not to throw and can be called
+ * without error handling.
+ *
+ * ```ts
+ * // ✅ Safe to return void - all unsafe code is wrapped
+ * const processData = (data: string): void => {
+ *   const parseResult = trySync(
+ *     () => JSON.parse(data),
+ *     (error) => ({ type: "ParseError", message: String(error) }),
+ *   );
+ *
+ *   if (!parseResult.ok) {
+ *     logError(parseResult.error); // Handle error appropriately
+ *     return;
+ *   }
+ *
+ *   // Continue with safe operations...
+ * };
+ *
+ * // ✅ Can call without try-catch since it returns void
+ * processData(jsonString);
+ * ```
+ *
+ * This approach creates a clear contract: functions returning `void` are safe
+ * to call, while functions returning `Result<T, E>` require explicit error
+ * handling.
+ *
+ * #### How do I short-circuit processing of an array on the first error?
  *
  * If you want to stop processing as soon as an error occurs (short-circuit),
  * you should produce and check each `Result` inside a loop:
@@ -175,7 +277,7 @@
  * // All queries succeeded
  * ```
  *
- * ### How do I handle an array of operations and short-circuit on the first error?
+ * #### How do I handle an array of operations and short-circuit on the first error?
  *
  * If you have an array of operations (not results), you should make them
  * _lazy_—that is, represent each operation as a function. This way, you only
@@ -212,8 +314,7 @@
  * above) over monadic helpers. Imperative code is generally more readable,
  * easier to debug, and more familiar to most JavaScript and TypeScript
  * developers. While monads and functional helpers can be powerful, they often
- * obscure control flow and make debugging harder. Evolu's approach keeps error
- * handling explicit and straightforward.
+ * obscure control flow and make debugging harder.
  */
 export type Result<T, E> = Ok<T> | Err<E>;
 
@@ -333,7 +434,7 @@ export const getOrThrow = <T, E>(result: Result<T, E>): T => {
   if (result.ok) {
     return result.value;
   } else {
-    throw new Error("getOrThrow failed", { cause: result.error });
+    throw new Error("getOrThrow", { cause: result.error });
   }
 };
 
@@ -357,7 +458,10 @@ export const getOrThrow = <T, E>(result: Result<T, E>): T => {
  * const parseJson = (value: string): Result<unknown, ParseJsonError> =>
  *   trySync(
  *     () => JSON.parse(value) as unknown,
- *     (error) => ({ type: "ParseJsonError", message: String(error) }),
+ *     (error): ParseJsonError => ({
+ *       type: "ParseJsonError",
+ *       message: String(error),
+ *     }),
  *   );
  * ```
  */
