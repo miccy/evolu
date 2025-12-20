@@ -21,13 +21,14 @@ export const navigation: Array<NavGroup> = [
       },
       {
         title: "Task",
-        href: "/docs/api-reference/common/Task/interfaces/Task",
+        href: "/docs/api-reference/common/Task/type-aliases/Task",
       },
       {
         title: "Type",
         href: "/docs/api-reference/common/Type/interfaces/Type",
       },
       { title: "Dependency injection", href: "/docs/dependency-injection" },
+      { title: "Resource management", href: "/docs/resource-management" },
       { title: "Conventions", href: "/docs/conventions" },
     ],
   },
