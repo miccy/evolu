@@ -1,35 +1,35 @@
 import {
-  filterArray,
-  firstInArray,
-  isNonEmptyReadonlyArray,
-  mapArray,
+    filterArray,
+    firstInArray,
+    isNonEmptyArray,
+    mapArray
 } from "../Array.js";
 import { ConsoleConfig, ConsoleDep } from "../Console.js";
 import { TimingSafeEqualDep } from "../Crypto.js";
 import { Lazy } from "../Function.js";
 import { createInstances } from "../Instances.js";
-import { err, ok, Result } from "../Result.js";
-import { sql, SqliteDep, SqliteError } from "../Sqlite.js";
-import { createMutex, isAsync, MaybeAsync, Mutex } from "../OldTask.js";
+import { Result, err, ok } from "../Result.js";
+import { SqliteDep, SqliteError, sql } from "../Sqlite.js";
+import { createMutex, isAsync, type MaybeAsync, type Mutex } from "../Task.js";
 import { PositiveInt, SimpleName } from "../Type.js";
 import {
-  OwnerId,
-  ownerIdBytesToOwnerId,
-  OwnerTransport,
-  OwnerWriteKey,
+    OwnerId,
+    OwnerTransport,
+    OwnerWriteKey,
+    ownerIdBytesToOwnerId,
 } from "./Owner.js";
 import { ProtocolInvalidDataError } from "./Protocol.js";
 import {
-  createBaseSqliteStorage,
-  CreateBaseSqliteStorageConfig,
-  EncryptedDbChange,
-  getOwnerUsage,
-  getTimestampInsertStrategy,
-  SqliteStorageDeps,
-  Storage,
-  StorageConfig,
-  StorageQuotaError,
-  updateOwnerUsage,
+    CreateBaseSqliteStorageConfig,
+    EncryptedDbChange,
+    SqliteStorageDeps,
+    Storage,
+    StorageConfig,
+    StorageQuotaError,
+    createBaseSqliteStorage,
+    getOwnerUsage,
+    getTimestampInsertStrategy,
+    updateOwnerUsage,
 } from "./Storage.js";
 import { timestampToTimestampBytes } from "./Timestamp.js";
 
@@ -140,7 +140,7 @@ export const createRelaySqliteStorage =
 
         const { rows } = selectWriteKey.value;
 
-        if (isNonEmptyReadonlyArray(rows)) {
+        if (isNonEmptyArray(rows)) {
           return deps.timingSafeEqual(rows[0].writeKey, writeKey);
         }
 
@@ -197,7 +197,7 @@ export const createRelaySqliteStorage =
             );
 
             // Nothing to write
-            if (!isNonEmptyReadonlyArray(newMessages)) {
+            if (!isNonEmptyArray(newMessages)) {
               return ok();
             }
 

@@ -1,16 +1,16 @@
 import {
-  appendToArray,
-  firstInArray,
-  isNonEmptyReadonlyArray,
-  NonEmptyArray,
-  NonEmptyReadonlyArray,
+    appendToArray,
+    firstInArray,
+    isNonEmptyArray,
+    NonEmptyArray,
+    NonEmptyReadonlyArray
 } from "../Array.js";
 import { assertNonEmptyReadonlyArray } from "../Assert.js";
 import { Brand } from "../Brand.js";
 import { ConsoleDep } from "../Console.js";
 import {
-  DecryptWithXChaCha20Poly1305Error,
-  RandomBytesDep,
+    DecryptWithXChaCha20Poly1305Error,
+    RandomBytesDep,
 } from "../Crypto.js";
 import { createUnknownError, UnknownError } from "../Error.js";
 import { constFalse, constTrue } from "../Function.js";
@@ -19,74 +19,74 @@ import { RandomDep } from "../Random.js";
 import { createResources } from "../Resources.js";
 import { err, ok, Result } from "../Result.js";
 import {
-  booleanToSqliteBoolean,
-  sql,
-  SqliteBoolean,
-  sqliteBooleanToBoolean,
-  SqliteDep,
-  SqliteError,
-  SqliteValue,
+    booleanToSqliteBoolean,
+    sql,
+    SqliteBoolean,
+    sqliteBooleanToBoolean,
+    SqliteDep,
+    SqliteError,
+    SqliteValue,
 } from "../Sqlite.js";
 import { AbortError, createMutex } from "../Task.js";
 import { TimeDep } from "../Time.js";
 import {
-  DateIso,
-  Id,
-  IdBytes,
-  idBytesToId,
-  idToIdBytes,
-  PositiveInt,
+    DateIso,
+    Id,
+    IdBytes,
+    idBytesToId,
+    idToIdBytes,
+    PositiveInt,
 } from "../Type.js";
 import { CreateWebSocketDep, WebSocket } from "../WebSocket.js";
 import {
-  AppOwner,
-  AppOwnerDep,
-  Owner,
-  OwnerId,
-  OwnerIdBytes,
-  ownerIdBytesToOwnerId,
-  ownerIdToOwnerIdBytes,
-  OwnerTransport,
-  ReadonlyOwner,
+    AppOwner,
+    AppOwnerDep,
+    Owner,
+    OwnerId,
+    OwnerIdBytes,
+    ownerIdBytesToOwnerId,
+    ownerIdToOwnerIdBytes,
+    OwnerTransport,
+    ReadonlyOwner,
 } from "./Owner.js";
 import {
-  applyProtocolMessageAsClient,
-  createProtocolMessageForSync,
-  createProtocolMessageForUnsubscribe,
-  createProtocolMessageFromCrdtMessages,
-  decryptAndDecodeDbChange,
-  encodeAndEncryptDbChange,
-  ProtocolError,
-  ProtocolInvalidDataError,
-  ProtocolTimestampMismatchError,
-  SubscriptionFlags,
+    applyProtocolMessageAsClient,
+    createProtocolMessageForSync,
+    createProtocolMessageForUnsubscribe,
+    createProtocolMessageFromCrdtMessages,
+    decryptAndDecodeDbChange,
+    encodeAndEncryptDbChange,
+    ProtocolError,
+    ProtocolInvalidDataError,
+    ProtocolTimestampMismatchError,
+    SubscriptionFlags,
 } from "./Protocol.js";
 import { DbSchemaDep, MutationChange, systemColumns } from "./Schema.js";
 import {
-  BaseSqliteStorage,
-  CrdtMessage,
-  createBaseSqliteStorage,
-  DbChange,
-  getOwnerUsage,
-  getTimestampInsertStrategy,
-  Storage,
-  StorageWriteError,
-  updateOwnerUsage,
+    BaseSqliteStorage,
+    CrdtMessage,
+    createBaseSqliteStorage,
+    DbChange,
+    getOwnerUsage,
+    getTimestampInsertStrategy,
+    Storage,
+    StorageWriteError,
+    updateOwnerUsage,
 } from "./Storage.js";
 import {
-  createInitialTimestamp,
-  Millis,
-  receiveTimestamp,
-  sendTimestamp,
-  Timestamp,
-  TimestampBytes,
-  timestampBytesToTimestamp,
-  TimestampConfigDep,
-  TimestampCounterOverflowError,
-  TimestampDriftError,
-  TimestampTimeOutOfRangeError,
-  timestampToDateIso,
-  timestampToTimestampBytes,
+    createInitialTimestamp,
+    Millis,
+    receiveTimestamp,
+    sendTimestamp,
+    Timestamp,
+    TimestampBytes,
+    timestampBytesToTimestamp,
+    TimestampConfigDep,
+    TimestampCounterOverflowError,
+    TimestampDriftError,
+    TimestampTimeOutOfRangeError,
+    timestampToDateIso,
+    timestampToTimestampBytes,
 } from "./Timestamp.js";
 
 export interface Sync extends Disposable {
@@ -535,7 +535,7 @@ const createClientStorage =
               clockTimestamp = nextTimestamp.value;
             }
 
-            if (isNonEmptyReadonlyArray(messages)) {
+            if (isNonEmptyArray(messages)) {
               const result = applyMessages({ ...deps, storage })(
                 owner.id,
                 messages,

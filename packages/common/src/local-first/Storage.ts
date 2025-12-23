@@ -1,17 +1,17 @@
 import { sha256 } from "@noble/hashes/sha2.js";
 import {
   firstInArray,
-  isNonEmptyReadonlyArray,
-  NonEmptyReadonlyArray,
+  isNonEmptyArray,
+  type NonEmptyReadonlyArray
 } from "../Array.js";
 import { assert } from "../Assert.js";
-import { Brand } from "../Brand.js";
+import type { Brand } from "../Brand.js";
 import { concatBytes } from "../Buffer.js";
 import { decrement } from "../Number.js";
-import { RandomDep } from "../Random.js";
-import { err, ok, Result } from "../Result.js";
-import { sql, SqliteDep, SqliteError, SqliteValue } from "../Sqlite.js";
-import { MaybeAsync } from "../OldTask.js";
+import type { RandomDep } from "../Random.js";
+import { err, ok, type Result } from "../Result.js";
+import { sql, SqliteValue, type SqliteDep, type SqliteError } from "../Sqlite.js";
+import type { MaybeAsync } from "../Task.js";
 import {
   Boolean,
   brand,
@@ -51,7 +51,7 @@ export interface StorageConfig {
    * The callback returns a boolean rather than an error because error handling
    * and logging are the responsibility of the callback implementation.
    *
-   * ## Example
+   * ### Example
    *
    * ```ts
    * // Client
@@ -1536,14 +1536,21 @@ const fingerprintRanges =
     if (!result.ok) return result;
 
     const fingerprintRanges = result.value.rows.map(
-      (row, i, arr): FingerprintRange => ({
-        type: RangeType.Fingerprint,
-        upperBound: i === arr.length - 1 ? upperBound : row.b!,
-        fingerprint: sqliteFingerprintToFingerprint([
-          row.h1,
-          row.h2,
-        ] as SqliteFingerprint),
-      }),
+      (row, i, arr): FingerprintRange => {
+        let bound = upperBound;
+        if (i !== arr.length - 1) {
+          assert(row.b !== null, "row.b must not be null");
+          bound = row.b;
+        }
+        return {
+          type: RangeType.Fingerprint,
+          upperBound: bound,
+          fingerprint: sqliteFingerprintToFingerprint([
+            row.h1,
+            row.h2,
+          ] as SqliteFingerprint),
+        };
+      },
     );
 
     return ok(fingerprintRanges);
@@ -1661,7 +1668,7 @@ export const getOwnerUsage =
     `);
     if (!result.ok) return result;
 
-    if (!isNonEmptyReadonlyArray(result.value.rows)) {
+    if (!isNonEmptyArray(result.value.rows)) {
       return ok({
         storedBytes: null,
         firstTimestamp: initialTimestamp,

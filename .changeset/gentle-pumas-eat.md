@@ -9,4 +9,6 @@
 "@evolu/relay": major
 ---
 
+# Update Node.js requirement
+
 Updated minimum Node.js version from 22 to 24 (current LTS)

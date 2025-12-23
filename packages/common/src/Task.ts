@@ -1,7 +1,18 @@
-import { isNonEmptyArray, shiftArray } from "./Array.js";
-import { Result, err, ok } from "./Result.js";
+import { isNonEmptyArray, shiftFromArray } from "./Array.js";
+import { err, ok, type Result } from "./Result.js";
 import { Duration, durationToNonNegativeInt } from "./Time.js";
 import { NonNegativeInt, PositiveInt } from "./Type.js";
+
+
+declare global {
+  interface PromiseConstructor {
+    withResolvers<T>(): {
+      promise: Promise<T>;
+      resolve: (value: T | PromiseLike<T>) => void;
+      reject: (reason?: unknown) => void;
+    };
+  }
+}
 
 /**
  * `Task` is a function that creates and returns an optionally cancellable
@@ -144,6 +155,8 @@ import { NonNegativeInt, PositiveInt } from "./Type.js";
  * dependencies and `TaskContext` for execution context like cancellation. Usage
  * follows the pattern: deps → arguments → execution context.
  */
+
+
 export interface Task<T, E> {
   /**
    * Invoke the Task.
@@ -236,7 +249,11 @@ const combineSignal = (
   internalSignal: AbortSignal,
 ): AbortSignal =>
   context?.signal
-    ? AbortSignal.any([context.signal, internalSignal])
+    ? (
+        AbortSignal as unknown as {
+          any: (signals: Iterable<AbortSignal>) => AbortSignal;
+        }
+      ).any([context.signal, internalSignal])
     : internalSignal;
 
 /**
@@ -652,7 +669,7 @@ export const createSemaphore = (maxConcurrent: PositiveInt): Semaphore => {
 
   const release = (): void => {
     if (isNonEmptyArray(waitingQueue)) {
-      shiftArray(waitingQueue)();
+      shiftFromArray(waitingQueue)();
     } else {
       availablePermits++;
     }
@@ -689,7 +706,7 @@ export const createSemaphore = (maxConcurrent: PositiveInt): Semaphore => {
 
       // Release all waiting tasks so they can continue and check isDisposed
       while (isNonEmptyArray(waitingQueue)) {
-        shiftArray(waitingQueue)();
+        shiftFromArray(waitingQueue)();
       }
     },
   };

@@ -1,6 +1,6 @@
 import { constVoid } from "./Function.js";
 import { err, ok, Result } from "./Result.js";
-import { retry, RetryError, RetryOptions } from "./OldTask.js";
+import { retry, RetryError, type RetryOptions } from "./Task.js";
 import { maxPositiveInt } from "./Type.js";
 
 /** WebSocket with auto-reconnect and offline support. */

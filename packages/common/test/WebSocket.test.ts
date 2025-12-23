@@ -4,10 +4,10 @@ import { err, ok } from "../src/Result.js";
 import { AbortError, RetryError, wait } from "../src/Task.js";
 import { PositiveInt } from "../src/Type.js";
 import {
-  createWebSocket,
-  WebSocketError,
-  WebSocketReadyState,
-  WebSocketRetryError,
+    WebSocketError,
+    WebSocketReadyState,
+    WebSocketRetryError,
+    createWebSocket,
 } from "../src/WebSocket.js";
 
 let wsServer: WebSocketServer;
@@ -419,7 +419,7 @@ test("aborts connection attempts when disposed", async () => {
   const socket = createWebSocket(INVALID_URL, {
     retryOptions: {
       retries: PositiveInt.orThrow(1),
-      onRetry: (error) => {
+      onRetry: (error: WebSocketRetryError | AbortError) => {
         onRetry(error);
         retryCallCount++;
 
@@ -464,7 +464,7 @@ test("retries only on specific error types", async () => {
   const socket = createWebSocket(INVALID_URL, {
     retryOptions: {
       retries: PositiveInt.orThrow(1),
-      onRetry: (error) => {
+      onRetry: (error: WebSocketRetryError | AbortError) => {
         onRetry(error);
       },
       retryable: retryablePredicate,
@@ -507,7 +507,7 @@ test("retries with increasing delays", async () => {
       initialDelay: "10ms",
       factor: 2,
       retries: PositiveInt.orThrow(3),
-      onRetry: (_error, _attempt, delay) => {
+      onRetry: (_error: WebSocketRetryError | AbortError, _attempt: number, delay: number) => {
         delays.push(delay);
         if (delays.length === 3) {
           resolve(undefined);

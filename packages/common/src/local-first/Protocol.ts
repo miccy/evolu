@@ -178,27 +178,27 @@
  */
 
 import { Packr } from "msgpackr";
-import { isNonEmptyReadonlyArray, NonEmptyReadonlyArray } from "../Array.js";
+import { isNonEmptyArray, NonEmptyReadonlyArray } from "../Array.js";
 import { assert } from "../Assert.js";
 import { Brand } from "../Brand.js";
 import {
-  Buffer,
-  bytesToHex,
-  bytesToUtf8,
-  createBuffer,
-  hexToBytes,
-  utf8ToBytes,
+    Buffer,
+    bytesToHex,
+    bytesToUtf8,
+    createBuffer,
+    hexToBytes,
+    utf8ToBytes,
 } from "../Buffer.js";
 import {
-  createPadmePadding,
-  decryptWithXChaCha20Poly1305,
-  DecryptWithXChaCha20Poly1305Error,
-  EncryptionKey,
-  encryptWithXChaCha20Poly1305,
-  Entropy24,
-  RandomBytesDep,
-  XChaCha20Poly1305Ciphertext,
-  xChaCha20Poly1305NonceLength,
+    createPadmePadding,
+    decryptWithXChaCha20Poly1305,
+    DecryptWithXChaCha20Poly1305Error,
+    EncryptionKey,
+    encryptWithXChaCha20Poly1305,
+    Entropy24,
+    RandomBytesDep,
+    XChaCha20Poly1305Ciphertext,
+    xChaCha20Poly1305NonceLength,
 } from "../Crypto.js";
 import { eqArrayNumber } from "../Eq.js";
 import { computeBalancedBuckets } from "../Number.js";
@@ -206,60 +206,60 @@ import { createRecord, objectToEntries } from "../Object.js";
 import { err, ok, Result } from "../Result.js";
 import { SqliteValue } from "../Sqlite.js";
 import {
-  Base64Url,
-  base64UrlToUint8Array,
-  between,
-  DateIso,
-  Id,
-  IdBytes,
-  idBytesToId,
-  idBytesTypeValueLength,
-  idToIdBytes,
-  Int,
-  Json,
-  jsonToJsonValue,
-  NonNegativeInt,
-  Number,
-  PositiveInt,
-  uint8ArrayToBase64Url,
+    Base64Url,
+    base64UrlToUint8Array,
+    between,
+    DateIso,
+    Id,
+    IdBytes,
+    idBytesToId,
+    idBytesTypeValueLength,
+    idToIdBytes,
+    Int,
+    Json,
+    jsonToJsonValue,
+    NonNegativeInt,
+    Number,
+    PositiveInt,
+    uint8ArrayToBase64Url,
 } from "../Type.js";
 import { Predicate } from "../Types.js";
 import {
-  Owner,
-  OwnerError,
-  OwnerId,
-  OwnerIdBytes,
-  ownerIdToOwnerIdBytes,
-  OwnerWriteKey,
-  ownerWriteKeyLength,
+    Owner,
+    OwnerError,
+    OwnerId,
+    OwnerIdBytes,
+    ownerIdToOwnerIdBytes,
+    OwnerWriteKey,
+    ownerWriteKeyLength,
 } from "./Owner.js";
 import {
-  BaseRange,
-  CrdtMessage,
-  DbChange,
-  EncryptedCrdtMessage,
-  EncryptedDbChange,
-  Fingerprint,
-  FingerprintRange,
-  fingerprintSize,
-  InfiniteUpperBound,
-  Range,
-  RangeType,
-  RangeUpperBound,
-  SkipRange,
-  StorageDep,
-  TimestampsRange,
+    BaseRange,
+    CrdtMessage,
+    DbChange,
+    EncryptedCrdtMessage,
+    EncryptedDbChange,
+    Fingerprint,
+    FingerprintRange,
+    fingerprintSize,
+    InfiniteUpperBound,
+    Range,
+    RangeType,
+    RangeUpperBound,
+    SkipRange,
+    StorageDep,
+    TimestampsRange,
 } from "./Storage.js";
 import {
-  Counter,
-  eqTimestamp,
-  Millis,
-  NodeId,
-  Timestamp,
-  TimestampBytes,
-  timestampBytesLength,
-  timestampBytesToTimestamp,
-  timestampToTimestampBytes,
+    Counter,
+    eqTimestamp,
+    Millis,
+    NodeId,
+    Timestamp,
+    TimestampBytes,
+    timestampBytesLength,
+    timestampBytesToTimestamp,
+    timestampToTimestampBytes,
 } from "./Timestamp.js";
 
 /**
@@ -975,7 +975,7 @@ export const applyProtocolMessageAsClient =
       const messages = decodeMessages(input);
       const ownerIdBytes = ownerIdToOwnerIdBytes(ownerId);
 
-      if (isNonEmptyReadonlyArray(messages)) {
+      if (isNonEmptyArray(messages)) {
         const result = await deps.storage.writeMessages(ownerIdBytes, messages);
         // Errors are handled by the Storage. Here we just stop syncing.
         if (!result.ok) return ok({ type: "no-response" });
@@ -997,7 +997,7 @@ export const applyProtocolMessageAsClient =
 
       const ranges = decodeRanges(input);
 
-      if (!isNonEmptyReadonlyArray(ranges)) {
+      if (!isNonEmptyArray(ranges)) {
         return ok({ type: "no-response" });
       }
 
@@ -1116,7 +1116,7 @@ export const applyProtocolMessageAsRelay =
 
       const messages = decodeMessages(input);
 
-      if (isNonEmptyReadonlyArray(messages)) {
+      if (isNonEmptyArray(messages)) {
         if (!writeKey) {
           return ok({
             type: "response",
@@ -1183,7 +1183,7 @@ export const applyProtocolMessageAsRelay =
 
       // Non-initiators always respond to provide sync completion feedback,
       // even when there's nothing to sync.
-      if (!isNonEmptyReadonlyArray(ranges)) {
+      if (!isNonEmptyArray(ranges)) {
         return ok({ type: "response", message: output.unwrap() });
       }
 
