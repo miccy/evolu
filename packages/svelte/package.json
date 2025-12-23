@@ -43,7 +43,7 @@
     "@sveltejs/package": "^2.5.7",
     "@tsconfig/svelte": "^5.0.6",
     "svelte": "^5.45.10",
-    "svelte-check": "^4.3.4",
+    "svelte-check": "^4.3.5",
     "typescript": "^5.9.3"
   },
   "peerDependencies": {
