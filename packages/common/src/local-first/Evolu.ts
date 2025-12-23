@@ -2,7 +2,7 @@ import { pack } from "msgpackr";
 import { dedupeArray, isNonEmptyArray } from "../Array.js";
 import { assert, assertNonEmptyReadonlyArray } from "../Assert.js";
 import { createCallbacks } from "../Callbacks.js";
-import { createConsole, type ConsoleDep } from "../Console.js";
+import { createConsole } from "../Console.js";
 import { createRandomBytes, type RandomBytesDep } from "../Crypto.js";
 import { eqArrayNumber } from "../Eq.js";
 import type { FlushSyncDep, ReloadAppDep } from "../Platform.js";
@@ -15,9 +15,7 @@ import { err, ok, type Result } from "../Result.js";
 import {
   SqliteBoolean,
   isSqlMutation,
-  sqliteBooleanToBoolean,
-  type SafeSql,
-  type SqliteQuery,
+  type SafeSql
 } from "../Sqlite.js";
 import { createStore, type ReadonlyStore, type Store, type StoreSubscribe } from "../Store.js";
 import {
@@ -34,38 +32,33 @@ import type { IntentionalNever } from "../Types.js";
 import type { CreateMessageChannelDep } from "../Worker.js";
 import type { EvoluError } from "./Error.js";
 import {
-  createOwnerWebSocketTransport,
   type AppOwner,
   type OwnerId,
-  type OwnerTransport,
+  type OwnerTransport
 } from "./Owner.js";
 import {
   createSubscribedQueries,
   emptyRows,
   serializeQuery,
-  type Queries,
   type QueriesToQueryRowsPromises,
   type Query,
   type QueryRows,
   type QueryRowsMap,
   type Row,
-  type SubscribedQueries,
+  type SubscribedQueries
 } from "./Query.js";
 import {
   insertable,
   kysely,
   updateable,
   upsertable,
-  type CreateQuery,
-  type EvoluSchema,
-  type IndexesConfig,
   type Mutation,
   type MutationChange,
   type MutationKind,
   type MutationMapping,
   type MutationOptions,
   type SystemColumns,
-  type ValidateSchema,
+  type ValidateSchema
 } from "./Schema.js";
 import type { SharedWorkerDep } from "./SharedWorker.js";
 import { DbChange } from "./Storage.js";
@@ -543,7 +536,7 @@ export interface Evolu<S extends EvoluSchema = EvoluSchema> extends Disposable {
    * In the future, it will be possible to import a database and export/import
    * history for 1:1 migrations across owners.
    */
-  readonly exportDatabase: () => Promise<Uint8Array<ArrayBuffer>>;
+  readonly exportDatabase: () => Promise<Uint8Array>;
 
   /**
    * Use a {@link SyncOwner}. Returns a {@link UnuseOwner}.
@@ -697,7 +690,7 @@ export const createEvolu =
     const subscribedQueries = createSubscribedQueries(rowsStore);
     const loadingPromises = createLoadingPromises(subscribedQueries);
     const onCompleteCallbacks = createCallbacks(deps);
-    const exportCallbacks = createCallbacks<Uint8Array<ArrayBuffer>>(deps);
+    const exportCallbacks = createCallbacks<Uint8Array>(deps);
 
     const loadQueryMicrotaskQueue: Array<Query> = [];
     const useOwnerMicrotaskQueue: Array<[SyncOwner, boolean, Uint8Array]> = [];
@@ -1043,7 +1036,7 @@ export const createEvolu =
 
       exportDatabase: () => {
         const { promise, resolve } =
-          Promise.withResolvers<Uint8Array<ArrayBuffer>>();
+          Promise.withResolvers<Uint8Array>();
         const _onCompleteId = exportCallbacks.register(resolve);
         // dbWorker.postMessage({ type: "export", onCompleteId });
         return promise;

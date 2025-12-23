@@ -1,6 +1,11 @@
 {
   "typescript.tsdk": "node_modules/typescript/lib",
+  "biome.lspBin": "node_modules/@biomejs/biome/bin/biome",
   "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.biome": "never",
+    "source.organizeImports.biome": "never"
+  },
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
