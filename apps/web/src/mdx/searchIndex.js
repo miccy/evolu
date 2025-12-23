@@ -19,8 +19,9 @@ const data = "DATA_PLACEHOLDER";
  */
 const getName = (title) => {
   let t = title.toLowerCase();
-  // Remove generic parameters like <T, E>
-  t = t.replace(/<[^>]*>/g, "");
+  // Remove trailing generic parameters like <T, E> from type names
+  // e.g., "evolu<s>" -> "evolu", "interface: foo<t, e>" -> "interface: foo"
+  t = t.replace(/\s*<[^>]*>$/, "");
   // Get the part after last colon or slash
   const parts = t.split(/[:/]/);
   return parts[parts.length - 1].trim();
