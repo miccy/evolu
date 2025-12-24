@@ -42,7 +42,7 @@
     "@types/react-dom": "catalog:react19",
     "react": "catalog:react19",
     "typescript": "^5.9.2",
-    "vitest": "^4.0.4"
+    "vitest": "^4.0.16"
   },
   "peerDependencies": {
     "@evolu/common": "^7.4.1",

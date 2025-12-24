@@ -55,8 +55,8 @@
     "@noble/ciphers": "^2.0.0",
     "@noble/hashes": "^2.0.0",
     "@scure/bip39": "^2.0.0",
-    "kysely": "^0.28.4",
-    "msgpackr": "^1.11.5",
+    "kysely": "^0.28.9",
+    "msgpackr": "^1.11.8",
     "random": "^5.4.1"
   },
   "devDependencies": {
@@ -67,7 +67,7 @@
     "better-sqlite3": "^12.1.1",
     "fast-check": "^4.2.0",
     "typescript": "^5.9.2",
-    "vitest": "^4.0.4",
+    "vitest": "^4.0.16",
     "ws": "^8.18.2"
   },
   "publishConfig": {
