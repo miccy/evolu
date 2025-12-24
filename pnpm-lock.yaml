@@ -18,22 +18,6 @@ catalogs:
     react-dom:
       specifier: 19.2.3
       version: 19.2.3
-  shared:
-    '@types/node':
-      specifier: ^22.19.3
-      version: 22.19.3
-    tailwindcss:
-      specifier: ^4.1.18
-      version: 4.1.18
-    typescript:
-      specifier: ^5.9.2
-      version: 5.9.3
-    vite:
-      specifier: ^7.3.0
-      version: 7.3.0
-    vitest:
-      specifier: ^4.0.16
-      version: 4.0.16
 
 importers:
 
@@ -61,7 +45,7 @@ importers:
         specifier: ^4.9.0
         version: 4.9.0(typedoc@0.28.15(typescript@5.9.3))
       typescript:
-        specifier: catalog:shared
+        specifier: ^5.9.2
         version: 5.9.3
 
   apps/relay:
@@ -77,10 +61,10 @@ importers:
         specifier: workspace:*
         version: link:../../packages/tsconfig
       '@types/node':
-        specifier: catalog:shared
+        specifier: ^22.19.3
         version: 22.19.3
       typescript:
-        specifier: catalog:shared
+        specifier: ^5.9.2
         version: 5.9.3
 
   apps/web:
@@ -182,10 +166,10 @@ importers:
         specifier: ^1.2.1
         version: 1.2.1
       tailwindcss:
-        specifier: catalog:shared
+        specifier: ^4.1.18
         version: 4.1.18
       typescript:
-        specifier: catalog:shared
+        specifier: ^5.9.2
         version: 5.9.3
       unist-util-filter:
         specifier: ^5.0.1
@@ -204,7 +188,7 @@ importers:
         specifier: ^2.0.13
         version: 2.0.13
       '@types/node':
-        specifier: catalog:shared
+        specifier: ^22.19.3
         version: 22.19.3
       '@types/react':
         specifier: catalog:react19
@@ -256,13 +240,13 @@ importers:
         specifier: ^1.0.0
         version: 1.0.2
       tailwindcss:
-        specifier: catalog:shared
+        specifier: ^4.1.18
         version: 4.1.18
       typescript:
-        specifier: catalog:shared
+        specifier: ^5.9.2
         version: 5.9.3
       vite:
-        specifier: catalog:shared
+        specifier: ^7.3.0
         version: 7.3.0(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(sass@1.93.2)(terser@5.44.1)(yaml@2.8.2)
       vite-plugin-pwa:
         specifier: ^1.0.2
@@ -302,10 +286,10 @@ importers:
         specifier: ^26.0.12
         version: 26.0.12(electron-builder-squirrel-windows@26.0.12)
       typescript:
-        specifier: catalog:shared
+        specifier: ^5.9.2
         version: 5.9.3
       vite:
-        specifier: catalog:shared
+        specifier: ^7.3.0
         version: 7.3.0(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(sass@1.93.2)(terser@5.44.1)(yaml@2.8.2)
       vite-plugin-electron:
         specifier: ^0.29.0
@@ -417,7 +401,7 @@ importers:
         specifier: ~19.2.7
         version: 19.2.7
       typescript:
-        specifier: catalog:shared
+        specifier: ^5.9.2
         version: 5.9.3
 
   examples/react-nextjs:
@@ -457,7 +441,7 @@ importers:
         specifier: ^4.1.18
         version: 4.1.18
       '@types/node':
-        specifier: catalog:shared
+        specifier: ^22.19.3
         version: 22.19.3
       '@types/react':
         specifier: ~19.2.7
@@ -475,10 +459,10 @@ importers:
         specifier: ^8.5.6
         version: 8.5.6
       tailwindcss:
-        specifier: catalog:shared
+        specifier: ^4.1.18
         version: 4.1.18
       typescript:
-        specifier: catalog:shared
+        specifier: ^5.9.2
         version: 5.9.3
 
   examples/react-vite-pwa:
@@ -505,7 +489,7 @@ importers:
         specifier: 19.2.3
         version: 19.2.3(react@19.2.3)
       tailwindcss:
-        specifier: catalog:shared
+        specifier: ^4.1.18
         version: 4.1.18
     devDependencies:
       '@eslint/js':
@@ -548,13 +532,13 @@ importers:
         specifier: ^16.3.0
         version: 16.5.0
       typescript:
-        specifier: catalog:shared
+        specifier: ^5.9.2
         version: 5.9.3
       typescript-eslint:
         specifier: ^8.50.1
         version: 8.50.1(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
       vite:
-        specifier: catalog:shared
+        specifier: ^7.3.0
         version: 7.3.0(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(sass@1.93.2)(terser@5.44.1)(yaml@2.8.2)
       vite-plugin-pwa:
         specifier: ^1.0.2
@@ -593,10 +577,10 @@ importers:
         specifier: ^2.8.1
         version: 2.8.1
       typescript:
-        specifier: catalog:shared
+        specifier: ^5.9.2
         version: 5.9.3
       vite:
-        specifier: catalog:shared
+        specifier: ^7.3.0
         version: 7.3.0(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(sass@1.93.2)(terser@5.44.1)(yaml@2.8.2)
       vite-plugin-pwa:
         specifier: ^1.0.2
@@ -630,10 +614,10 @@ importers:
         specifier: ^0.8.1
         version: 0.8.1(typescript@5.9.3)(vue@3.5.26(typescript@5.9.3))
       typescript:
-        specifier: catalog:shared
+        specifier: ^5.9.2
         version: 5.9.3
       vite:
-        specifier: catalog:shared
+        specifier: ^7.3.0
         version: 7.3.0(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(sass@1.93.2)(terser@5.44.1)(yaml@2.8.2)
       vite-plugin-pwa:
         specifier: ^1.0.2
@@ -682,10 +666,10 @@ importers:
         specifier: ^4.5.2
         version: 4.5.2
       typescript:
-        specifier: catalog:shared
+        specifier: ^5.9.2
         version: 5.9.3
       vitest:
-        specifier: catalog:shared
+        specifier: ^4.0.16
         version: 4.0.16(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(sass@1.93.2)(terser@5.44.1)(yaml@2.8.2)
       ws:
         specifier: ^8.18.2
@@ -710,16 +694,16 @@ importers:
         specifier: ^7.6.13
         version: 7.6.13
       '@types/node':
-        specifier: catalog:shared
+        specifier: ^22.19.3
         version: 22.19.3
       '@types/ws':
         specifier: ^8.18.1
         version: 8.18.1
       typescript:
-        specifier: catalog:shared
+        specifier: ^5.9.2
         version: 5.9.3
       vitest:
-        specifier: catalog:shared
+        specifier: ^4.0.16
         version: 4.0.16(@types/node@22.19.3)(jiti@2.6.1)(lightningcss@1.30.2)(sass@1.93.2)(terser@5.44.1)(yaml@2.8.2)
 
   packages/react:
@@ -740,10 +724,10 @@ importers:
         specifier: catalog:react19
         version: 19.2.3
       typescript:
-        specifier: catalog:shared
+        specifier: ^5.9.2
         version: 5.9.3
       vitest:
-        specifier: catalog:shared
+        specifier: ^4.0.16
         version: 4.0.16(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(sass@1.93.2)(terser@5.44.1)(yaml@2.8.2)
 
   packages/react-native:
@@ -782,10 +766,10 @@ importers:
         specifier: ^15.14.0
         version: 15.15.1(react-native@0.83.1(@babel/core@7.28.5)(@types/react@19.2.7)(react@19.2.3))(react@19.2.3)
       typescript:
-        specifier: catalog:shared
+        specifier: ^5.9.2
         version: 5.9.3
       vitest:
-        specifier: catalog:shared
+        specifier: ^4.0.16
         version: 4.0.16(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(sass@1.93.2)(terser@5.44.1)(yaml@2.8.2)
 
   packages/react-web:
@@ -812,13 +796,13 @@ importers:
         specifier: catalog:react19
         version: 19.2.3(react@19.2.3)
       typescript:
-        specifier: catalog:shared
+        specifier: ^5.9.2
         version: 5.9.3
       user-agent-data-types:
         specifier: ^0.4.2
         version: 0.4.2
       vitest:
-        specifier: catalog:shared
+        specifier: ^4.0.16
         version: 4.0.16(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(sass@1.93.2)(terser@5.44.1)(yaml@2.8.2)
 
   packages/svelte:
@@ -845,7 +829,7 @@ importers:
         specifier: ^4.3.5
         version: 4.3.5(picomatch@4.0.3)(svelte@5.46.0)(typescript@5.9.3)
       typescript:
-        specifier: catalog:shared
+        specifier: ^5.9.2
         version: 5.9.3
 
   packages/tsconfig: {}
@@ -863,10 +847,10 @@ importers:
         specifier: workspace:*
         version: link:../tsconfig
       typescript:
-        specifier: catalog:shared
+        specifier: ^5.9.2
         version: 5.9.3
       vitest:
-        specifier: catalog:shared
+        specifier: ^4.0.16
         version: 4.0.16(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(sass@1.93.2)(terser@5.44.1)(yaml@2.8.2)
 
   packages/web:
@@ -12343,14 +12327,14 @@ snapshots:
     dependencies:
       '@jest/fake-timers': 29.7.0
       '@jest/types': 29.6.3
-      '@types/node': 25.0.3
+      '@types/node': 22.19.3
       jest-mock: 29.7.0
 
   '@jest/fake-timers@29.7.0':
     dependencies:
       '@jest/types': 29.6.3
       '@sinonjs/fake-timers': 10.3.0
-      '@types/node': 25.0.3
+      '@types/node': 22.19.3
       jest-message-util: 29.7.0
       jest-mock: 29.7.0
       jest-util: 29.7.0
@@ -12384,7 +12368,7 @@ snapshots:
       '@jest/schemas': 29.6.3
       '@types/istanbul-lib-coverage': 2.0.6
       '@types/istanbul-reports': 3.0.4
-      '@types/node': 25.0.3
+      '@types/node': 22.19.3
       '@types/yargs': 17.0.35
       chalk: 4.1.2
 
@@ -13641,7 +13625,7 @@ snapshots:
 
   '@types/better-sqlite3@7.6.13':
     dependencies:
-      '@types/node': 25.0.3
+      '@types/node': 22.19.3
 
   '@types/cacheable-request@6.0.3':
     dependencies:
@@ -13671,11 +13655,11 @@ snapshots:
 
   '@types/fs-extra@9.0.13':
     dependencies:
-      '@types/node': 25.0.3
+      '@types/node': 22.19.3
 
   '@types/graceful-fs@4.1.9':
     dependencies:
-      '@types/node': 25.0.3
+      '@types/node': 22.19.3
 
   '@types/hast@3.0.4':
     dependencies:
@@ -13723,10 +13707,11 @@ snapshots:
   '@types/node@25.0.3':
     dependencies:
       undici-types: 7.16.0
+    optional: true
 
   '@types/plist@3.0.5':
     dependencies:
-      '@types/node': 25.0.3
+      '@types/node': 22.19.3
       xmlbuilder: 15.1.1
     optional: true
 
@@ -13754,7 +13739,7 @@ snapshots:
 
   '@types/through@0.0.33':
     dependencies:
-      '@types/node': 25.0.3
+      '@types/node': 22.19.3
 
   '@types/trusted-types@2.0.7': {}
 
@@ -13769,7 +13754,7 @@ snapshots:
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 25.0.3
+      '@types/node': 22.19.3
 
   '@types/yargs-parser@21.0.3': {}
 
@@ -14760,7 +14745,7 @@ snapshots:
 
   chrome-launcher@0.15.2:
     dependencies:
-      '@types/node': 25.0.3
+      '@types/node': 22.19.3
       escape-string-regexp: 4.0.0
       is-wsl: 2.2.0
       lighthouse-logger: 1.4.2
@@ -14769,7 +14754,7 @@ snapshots:
 
   chromium-edge-launcher@0.2.0:
     dependencies:
-      '@types/node': 25.0.3
+      '@types/node': 22.19.3
       escape-string-regexp: 4.0.0
       is-wsl: 2.2.0
       lighthouse-logger: 1.4.2
@@ -16814,7 +16799,7 @@ snapshots:
       '@jest/environment': 29.7.0
       '@jest/fake-timers': 29.7.0
       '@jest/types': 29.6.3
-      '@types/node': 25.0.3
+      '@types/node': 22.19.3
       jest-mock: 29.7.0
       jest-util: 29.7.0
 
@@ -16824,7 +16809,7 @@ snapshots:
     dependencies:
       '@jest/types': 29.6.3
       '@types/graceful-fs': 4.1.9
-      '@types/node': 25.0.3
+      '@types/node': 22.19.3
       anymatch: 3.1.3
       fb-watchman: 2.0.2
       graceful-fs: 4.2.11
@@ -16851,7 +16836,7 @@ snapshots:
   jest-mock@29.7.0:
     dependencies:
       '@jest/types': 29.6.3
-      '@types/node': 25.0.3
+      '@types/node': 22.19.3
       jest-util: 29.7.0
 
   jest-regex-util@29.6.3: {}
@@ -16859,7 +16844,7 @@ snapshots:
   jest-util@29.7.0:
     dependencies:
       '@jest/types': 29.6.3
-      '@types/node': 25.0.3
+      '@types/node': 22.19.3
       chalk: 4.1.2
       ci-info: 3.9.0
       graceful-fs: 4.2.11
@@ -16876,7 +16861,7 @@ snapshots:
 
   jest-worker@29.7.0:
     dependencies:
-      '@types/node': 25.0.3
+      '@types/node': 22.19.3
       jest-util: 29.7.0
       merge-stream: 2.0.0
       supports-color: 8.1.1
@@ -19886,7 +19871,8 @@ snapshots:
 
   undici-types@6.21.0: {}
 
-  undici-types@7.16.0: {}
+  undici-types@7.16.0:
+    optional: true
 
   undici@6.22.0: {}
 

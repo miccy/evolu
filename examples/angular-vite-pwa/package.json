@@ -20,9 +20,9 @@
     "@angular/compiler-cli": "^21.0.6",
     "@tailwindcss/vite": "^4.1.18",
     "@vite-pwa/assets-generator": "^1.0.0",
-    "tailwindcss": "catalog:shared",
-    "typescript": "catalog:shared",
-    "vite": "catalog:shared",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.2",
+    "vite": "^7.3.0",
     "vite-plugin-pwa": "^1.0.2"
   }
 }

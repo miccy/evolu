@@ -44,7 +44,7 @@
     "@tsconfig/svelte": "^5.0.5",
     "svelte": "^5.46.0",
     "svelte-check": "^4.3.5",
-    "typescript": "catalog:shared"
+    "typescript": "^5.9.2"
   },
   "peerDependencies": {
     "@evolu/common": "^7.4.1",

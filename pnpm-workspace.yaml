@@ -9,11 +9,5 @@ catalogs:
   react19:
     "@types/react": "~19.2.7"
     "@types/react-dom": "~19.2.3"
-    react: 19.2.3
-    react-dom: 19.2.3
-  shared:
-    "@types/node": ^22.19.3
-    typescript: ^5.9.2
-    vite: ^7.3.0
-    vitest: ^4.0.16
-    tailwindcss: ^4.1.18
+    "react": 19.2.3
+    "react-dom": 19.2.3

@@ -52,6 +52,6 @@
     "@babel/plugin-transform-explicit-resource-management": "^7.27.1",
     "@babel/plugin-transform-modules-commonjs": "^7.27.1",
     "@types/react": "~19.2.7",
-    "typescript": "catalog:shared"
+    "typescript": "^5.9.2"
   }
 }

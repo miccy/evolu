@@ -21,8 +21,8 @@
     "@vite-pwa/assets-generator": "^1.0.0",
     "@vitejs/plugin-vue": "^6.0.3",
     "@vue/tsconfig": "^0.8.1",
-    "typescript": "catalog:shared",
-    "vite": "catalog:shared",
+    "typescript": "^5.9.2",
+    "vite": "^7.3.0",
     "vite-plugin-pwa": "^1.0.2",
     "vue-tsc": "^3.2.1"
   }

@@ -19,8 +19,8 @@
     "svelte": "^5.46.0",
     "svelte-check": "^4.3.5",
     "tslib": "^2.8.1",
-    "typescript": "catalog:shared",
-    "vite": "catalog:shared",
+    "typescript": "^5.9.2",
+    "vite": "^7.3.0",
     "vite-plugin-pwa": "^1.0.2"
   }
 }
