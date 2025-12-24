@@ -10,5 +10,5 @@ import { createExpoDeps } from "../createExpoDeps.js";
 import { createOpSqliteDriver } from "../sqlite-drivers/createOpSqliteDriver.js";
 
 export const { evoluReactNativeDeps, localAuth } = createExpoDeps({
-  createSqliteDriver: createOpSqliteDriver,
+	createSqliteDriver: createOpSqliteDriver,
 });

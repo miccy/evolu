@@ -23,13 +23,15 @@
     "dev": "tsc --watch",
     "build": "rimraf dist && tsc",
     "clean": "rimraf .turbo node_modules dist",
-    "format": "prettier --write \"src/*.{ts,tsx,md}\""
+    "format": "biome check . --write",
+    "lint": "biome check ."
   },
   "dependencies": {
     "better-sqlite3": "^12.1.1",
     "ws": "^8.18.2"
   },
   "devDependencies": {
+    "@evolu/biome-config": "workspace:*",
     "@evolu/common": "workspace:*",
     "@evolu/tsconfig": "workspace:*",
     "@types/better-sqlite3": "^7.6.13",

@@ -1,5 +1,5 @@
-import { NonEmptyArray, NonEmptyReadonlyArray } from "./Array.js";
-import { ReadonlyRecord } from "./Object.js";
+import type { NonEmptyArray, NonEmptyReadonlyArray } from "./Array.js";
+import type { ReadonlyRecord } from "./Object.js";
 
 /**
  * Helper function to ensure exhaustive matching in a switch statement. Throws
@@ -31,7 +31,7 @@ import { ReadonlyRecord } from "./Object.js";
  * ```
  */
 export const exhaustiveCheck = (value: never): never => {
-  throw new Error(`exhaustiveCheck unhandled case: ${JSON.stringify(value)}`);
+	throw new Error(`exhaustiveCheck unhandled case: ${JSON.stringify(value)}`);
 };
 
 /**
@@ -95,16 +95,16 @@ export function readonly<T>(array: Array<T>): ReadonlyArray<T>;
 export function readonly<T>(set: Set<T>): ReadonlySet<T>;
 export function readonly<K, V>(map: Map<K, V>): ReadonlyMap<K, V>;
 export function readonly<K extends keyof any, V>(
-  record: Record<K, V>,
+	record: Record<K, V>,
 ): ReadonlyRecord<K, V>;
 export function readonly<T, K extends keyof any, V>(
-  value: Array<T> | Set<T> | Map<K, V> | Record<K, V>,
+	value: Array<T> | Set<T> | Map<K, V> | Record<K, V>,
 ):
-  | ReadonlyArray<T>
-  | ReadonlySet<T>
-  | ReadonlyMap<K, V>
-  | ReadonlyRecord<K, V> {
-  return value;
+	| ReadonlyArray<T>
+	| ReadonlySet<T>
+	| ReadonlyMap<K, V>
+	| ReadonlyRecord<K, V> {
+	return value;
 }
 
 /**

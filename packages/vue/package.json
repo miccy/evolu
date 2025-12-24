@@ -33,9 +33,11 @@
     "dev": "tsc --watch",
     "build": "rimraf dist && tsc",
     "clean": "rimraf .turbo node_modules dist",
-    "format": "prettier --write \"src/*.{ts,tsx,md}\""
+    "format": "biome check . --write",
+    "lint": "biome check ."
   },
   "devDependencies": {
+    "@evolu/biome-config": "workspace:*",
     "@evolu/common": "workspace:*",
     "@evolu/tsconfig": "workspace:*",
     "typescript": "^5.9.3",

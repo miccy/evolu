@@ -1,7 +1,7 @@
 {
-  "extends": "@tsconfig/svelte/tsconfig.json",
+	"extends": "@tsconfig/svelte/tsconfig.json",
 	"compilerOptions": {
-    "outDir": "dist",
+		"outDir": "dist",
 		"allowJs": true,
 		"checkJs": true,
 		"esModuleInterop": true,
@@ -13,6 +13,6 @@
 		"module": "NodeNext",
 		"moduleResolution": "NodeNext"
 	},
-  "include": ["src", "test", "svelte-types.d.ts"],
-  "exclude": ["dist", "node_modules"]
+	"include": ["src", "test", "svelte-types.d.ts"],
+	"exclude": ["dist", "node_modules"]
 }

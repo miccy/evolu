@@ -1,14 +1,14 @@
 import { bytesToHex } from "../Buffer.js";
-import { RandomBytesDep } from "../Crypto.js";
+import type { RandomBytesDep } from "../Crypto.js";
 import { createEqObject, eqNumber, eqString } from "../Eq.js";
 import { increment } from "../Number.js";
-import { Order, orderUint8Array } from "../Order.js";
-import { err, ok, Result } from "../Result.js";
-import { TimeDep } from "../Time.js";
+import { type Order, orderUint8Array } from "../Order.js";
+import { err, ok, type Result } from "../Result.js";
+import type { TimeDep } from "../Time.js";
 import {
   brand,
-  DateIso,
-  InferType,
+  type DateIso,
+  type InferType,
   lessThanOrEqualTo,
   NonNegativeInt,
   object,

@@ -1,5 +1,5 @@
-import { Eq, eqStrict } from "./Eq.js";
-import { Ref } from "./Ref.js";
+import { type Eq, eqStrict } from "./Eq.js";
+import type { Ref } from "./Ref.js";
 
 /**
  * A store for managing state with change notifications. Extends {@link Ref} with
@@ -7,26 +7,26 @@ import { Ref } from "./Ref.js";
  * listeners when the state changes.
  */
 export interface Store<T> extends Ref<T> {
-  /**
-   * Registers a listener to be called on state changes and returns a function
-   * to unsubscribe.
-   */
-  readonly subscribe: StoreSubscribe;
+	/**
+	 * Registers a listener to be called on state changes and returns a function
+	 * to unsubscribe.
+	 */
+	readonly subscribe: StoreSubscribe;
 
-  /** Returns the current state of the store. */
-  readonly get: () => T;
+	/** Returns the current state of the store. */
+	readonly get: () => T;
 
-  /**
-   * Updates the store's state and notifies all subscribed listeners if the new
-   * state differs from the current one.
-   */
-  readonly set: (state: T) => void;
+	/**
+	 * Updates the store's state and notifies all subscribed listeners if the new
+	 * state differs from the current one.
+	 */
+	readonly set: (state: T) => void;
 
-  /**
-   * Modifies the store's state by applying a callback function to the current
-   * state and notifies listeners if the state changes.
-   */
-  readonly modify: (updater: (current: T) => T) => void;
+	/**
+	 * Modifies the store's state by applying a callback function to the current
+	 * state and notifies listeners if the state changes.
+	 */
+	readonly modify: (updater: (current: T) => T) => void;
 }
 
 /** Registers a listener for state changes, returning an unsubscribe function. */
@@ -47,34 +47,34 @@ export type StoreUnsubscribe = () => void;
  * can provide a custom equality function as the second argument.
  */
 export const createStore = <T>(
-  initialState: T,
-  eq: Eq<T> = eqStrict,
+	initialState: T,
+	eq: Eq<T> = eqStrict,
 ): Store<T> => {
-  const listeners = new Set<StoreListener>();
-  let currentState = initialState;
+	const listeners = new Set<StoreListener>();
+	let currentState = initialState;
 
-  const updateState = (newState: T) => {
-    if (eq(newState, currentState)) return;
-    currentState = newState;
-    listeners.forEach((listener) => {
-      listener();
-    });
-  };
+	const updateState = (newState: T) => {
+		if (eq(newState, currentState)) return;
+		currentState = newState;
+		listeners.forEach((listener) => {
+			listener();
+		});
+	};
 
-  return {
-    subscribe: (listener) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
+	return {
+		subscribe: (listener) => {
+			listeners.add(listener);
+			return () => listeners.delete(listener);
+		},
 
-    get: () => currentState,
+		get: () => currentState,
 
-    set: (state) => {
-      updateState(state);
-    },
+		set: (state) => {
+			updateState(state);
+		},
 
-    modify: (updater) => {
-      updateState(updater(currentState));
-    },
-  };
+		modify: (updater) => {
+			updateState(updater(currentState));
+		},
+	};
 };

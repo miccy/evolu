@@ -11,7 +11,7 @@
 export type FlushSync = (callback: () => void) => void;
 
 export interface FlushSyncDep {
-  readonly flushSync: FlushSync;
+	readonly flushSync: FlushSync;
 }
 
 /**
@@ -23,5 +23,5 @@ export interface FlushSyncDep {
 export type ReloadApp = (url: string) => void;
 
 export interface ReloadAppDep {
-  readonly reloadApp: ReloadApp;
+	readonly reloadApp: ReloadApp;
 }

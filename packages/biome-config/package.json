@@ -1,0 +1,9 @@
+{
+  "name": "@evolu/biome-config",
+  "version": "1.0.0",
+  "private": true,
+  "files": ["biome.json"],
+  "exports": {
+    ".": "./biome.json"
+  }
+}

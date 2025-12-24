@@ -57,7 +57,7 @@
  * ```
  */
 export interface Brand<B extends string> {
-  readonly [__brand]: Readonly<Record<B, true>>;
+	readonly [__brand]: Readonly<Record<B, true>>;
 }
 
 declare const __brand: unique symbol;

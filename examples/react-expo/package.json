@@ -10,7 +10,7 @@
     "clean": "rimraf .expo android ios node_modules",
     "ios": "expo run:ios",
     "ios:go": "expo start --ios",
-    "lint": "expo lint",
+    "lint": "biome check .",
     "start": "expo start"
   },
   "jest": {
@@ -48,6 +48,7 @@
     "set.prototype.union": "^1.1.3"
   },
   "devDependencies": {
+    "@evolu/biome-config": "workspace:*",
     "@babel/core": "^7.28.0",
     "@babel/plugin-transform-explicit-resource-management": "^7.28.0",
     "@babel/plugin-transform-modules-commonjs": "^7.27.1",

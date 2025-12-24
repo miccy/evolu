@@ -27,12 +27,12 @@ import type { Type } from "./Type.js";
  * ```
  */
 export const assert: (
-  condition: unknown,
-  message: string,
+	condition: unknown,
+	message: string,
 ) => asserts condition = (condition, message) => {
-  if (!condition) {
-    throw new Error(message);
-  }
+	if (!condition) {
+		throw new Error(message);
+	}
 };
 
 /**
@@ -50,13 +50,13 @@ export const assert: (
  * ```
  */
 export const assertNonEmptyArray: <T>(
-  arr: Array<T>,
-  message?: string,
+	arr: Array<T>,
+	message?: string,
 ) => asserts arr is [T, ...Array<T>] = (
-  arr,
-  message = "Expected a non-empty array.",
+	arr,
+	message = "Expected a non-empty array.",
 ) => {
-  assert(arr.length > 0, message);
+	assert(arr.length > 0, message);
 };
 
 /**
@@ -74,11 +74,11 @@ export const assertNonEmptyArray: <T>(
  * ```
  */
 export const assertNonEmptyReadonlyArray: <T>(
-  arr: ReadonlyArray<T>,
-  message?: string,
+	arr: ReadonlyArray<T>,
+	message?: string,
 ) => asserts arr is readonly [T, ...Array<T>] = (
-  arr,
-  message = "Expected a non-empty readonly array.",
+	arr,
+	message = "Expected a non-empty readonly array.",
 ) => {
-  assert(arr.length > 0, message);
+	assert(arr.length > 0, message);
 };

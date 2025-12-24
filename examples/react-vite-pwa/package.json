@@ -8,7 +8,7 @@
     "clean": "rimraf node_modules dist .vite .turbo dev-dist",
     "dev": "vite",
     "generate-pwa-assets": "pwa-assets-generator",
-    "lint": "eslint .",
+    "lint": "biome check .",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -22,21 +22,14 @@
     "tailwindcss": "^4.1.18"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.2",
+    "@evolu/biome-config": "workspace:*",
     "@tailwindcss/forms": "^0.5.11",
     "@tailwindcss/vite": "^4.1.18",
     "@types/react": "~19.2.7",
     "@types/react-dom": "~19.2.3",
-    "@typescript-eslint/eslint-plugin": "^8.50.1",
-    "@typescript-eslint/parser": "^8.50.1",
     "@vite-pwa/assets-generator": "^1.0.0",
     "@vitejs/plugin-react": "^5.1.2",
-    "eslint": "9.39.2",
-    "eslint-plugin-react-hooks": "^7.0.0",
-    "eslint-plugin-react-refresh": "^0.4.26",
-    "globals": "^16.3.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.50.1",
     "vite": "^7.2.7",
     "vite-plugin-pwa": "^1.0.2",
     "workbox-core": "^7.3.0",

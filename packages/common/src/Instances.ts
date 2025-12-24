@@ -12,81 +12,79 @@
  * (having two Evolu instances with the same name would mean two SQLite
  * connections to the same file, which could corrupt data).
  */
-export interface Instances<
-  K extends string,
-  T extends Disposable,
-> extends Disposable {
-  /**
-   * Ensures an instance exists for the given key, creating it if necessary. If
-   * the instance already exists, the optional `onCacheHit` callback is invoked
-   * to update the existing instance.
-   */
-  readonly ensure: (
-    key: K,
-    create: () => T,
-    onCacheHit?: (instance: T) => void,
-  ) => T;
+export interface Instances<K extends string, T extends Disposable>
+	extends Disposable {
+	/**
+	 * Ensures an instance exists for the given key, creating it if necessary. If
+	 * the instance already exists, the optional `onCacheHit` callback is invoked
+	 * to update the existing instance.
+	 */
+	readonly ensure: (
+		key: K,
+		create: () => T,
+		onCacheHit?: (instance: T) => void,
+	) => T;
 
-  /** Gets an instance by key, or returns `null` if it doesn't exist. */
-  readonly get: (key: K) => T | null;
+	/** Gets an instance by key, or returns `null` if it doesn't exist. */
+	readonly get: (key: K) => T | null;
 
-  /** Checks if an instance exists for the given key. */
-  readonly has: (key: K) => boolean;
+	/** Checks if an instance exists for the given key. */
+	readonly has: (key: K) => boolean;
 
-  /**
-   * Deletes and disposes an instance by key. Returns `true` if the instance
-   * existed and was deleted, `false` otherwise.
-   */
-  readonly delete: (key: K) => boolean;
+	/**
+	 * Deletes and disposes an instance by key. Returns `true` if the instance
+	 * existed and was deleted, `false` otherwise.
+	 */
+	readonly delete: (key: K) => boolean;
 }
 
 /** Creates an {@link Instances}. */
 export const createInstances = <
-  K extends string,
-  T extends Disposable,
+	K extends string,
+	T extends Disposable,
 >(): Instances<K, T> => {
-  const instances = new Map<K, T>();
+	const instances = new Map<K, T>();
 
-  return {
-    ensure: (key, create, onCacheHit) => {
-      let instance = instances.get(key);
+	return {
+		ensure: (key, create, onCacheHit) => {
+			let instance = instances.get(key);
 
-      if (instance == null) {
-        instance = create();
-        instances.set(key, instance);
-      } else if (onCacheHit) {
-        onCacheHit(instance);
-      }
+			if (instance == null) {
+				instance = create();
+				instances.set(key, instance);
+			} else if (onCacheHit) {
+				onCacheHit(instance);
+			}
 
-      return instance;
-    },
+			return instance;
+		},
 
-    get: (key) => instances.get(key) ?? null,
+		get: (key) => instances.get(key) ?? null,
 
-    has: (key) => instances.has(key),
+		has: (key) => instances.has(key),
 
-    delete: (key) => {
-      const instance = instances.get(key);
-      if (instance == null) return false;
-      instances.delete(key);
-      instance[Symbol.dispose]();
-      return true;
-    },
+		delete: (key) => {
+			const instance = instances.get(key);
+			if (instance == null) return false;
+			instances.delete(key);
+			instance[Symbol.dispose]();
+			return true;
+		},
 
-    [Symbol.dispose]: () => {
-      const errors: Array<unknown> = [];
-      for (const instance of instances.values()) {
-        try {
-          instance[Symbol.dispose]();
-        } catch (error) {
-          errors.push(error);
-        }
-      }
-      instances.clear();
-      if (errors.length === 1) throw errors[0];
-      if (errors.length > 1) {
-        throw new AggregateError(errors, "Multiple disposal errors occurred");
-      }
-    },
-  };
+		[Symbol.dispose]: () => {
+			const errors: Array<unknown> = [];
+			for (const instance of instances.values()) {
+				try {
+					instance[Symbol.dispose]();
+				} catch (error) {
+					errors.push(error);
+				}
+			}
+			instances.clear();
+			if (errors.length === 1) throw errors[0];
+			if (errors.length > 1) {
+				throw new AggregateError(errors, "Multiple disposal errors occurred");
+			}
+		},
+	};
 };

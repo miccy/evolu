@@ -29,9 +29,9 @@ export type Ordering = -1 | 0 | 1;
  * ```
  */
 export const createOrder =
-  <A>(isLessThan: (x: A, y: A) => boolean): Order<A> =>
-  (x, y) =>
-    x === y ? 0 : isLessThan(x, y) ? -1 : 1;
+	<A>(isLessThan: (x: A, y: A) => boolean): Order<A> =>
+	(x, y) =>
+		x === y ? 0 : isLessThan(x, y) ? -1 : 1;
 
 /**
  * Returns an order that reverses the order of the given order.
@@ -45,9 +45,9 @@ export const createOrder =
  * ```
  */
 export const reverseOrder =
-  <A>(order: Order<A>): Order<A> =>
-  (a, b) =>
-    order(b, a);
+	<A>(order: Order<A>): Order<A> =>
+	(a, b) =>
+		order(b, a);
 
 /**
  * An order for `string` values in ascending order.
@@ -96,13 +96,13 @@ export const orderBigInt = createOrder<bigint>((a, b) => a < b);
 
 /** An {@link Order} for Uint8Array. */
 export const orderUint8Array: Order<Uint8Array> = (a, b) => {
-  if (a.byteLength > b.byteLength) return 1;
-  if (a.byteLength < b.byteLength) return -1;
+	if (a.byteLength > b.byteLength) return 1;
+	if (a.byteLength < b.byteLength) return -1;
 
-  for (let i = 0; i < a.byteLength; i++) {
-    if (a[i] < b[i]) return -1;
-    if (a[i] > b[i]) return 1;
-  }
+	for (let i = 0; i < a.byteLength; i++) {
+		if (a[i] < b[i]) return -1;
+		if (a[i] > b[i]) return 1;
+	}
 
-  return 0;
+	return 0;
 };

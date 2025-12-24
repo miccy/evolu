@@ -8,8 +8,10 @@
     "test": "turbo run test",
     "test:watch": "turbo run test:watch",
     "start": "turbo start",
-    "lint": "biome check .",
-    "format": "biome check . --write",
+    "lint": "turbo lint && pnpm lint:root",
+    "lint:root": "biome check *.json *.yaml scripts",
+    "format": "turbo format && pnpm format:root",
+    "format:root": "biome check *.json *.yaml scripts --write",
     "lint-monorepo": "pnpm dlx sherif@latest",
     "verify": "pnpm build && pnpm test && pnpm lint && pnpm lint-monorepo && pnpm typedoc",
     "clean": "turbo clean && rimraf node_modules pnpm-lock.yaml .turbo .eslintcache out",
@@ -80,5 +82,8 @@
         "react-dom": "19.2.3"
       }
     }
+  },
+  "dependencies": {
+    "@evolu/biome-config": "workspace:*"
   }
 }

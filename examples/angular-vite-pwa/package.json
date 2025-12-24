@@ -6,7 +6,9 @@
   "scripts": {
     "build": "tsc && vite build",
     "dev": "vite",
-    "generate-pwa-assets": "pwa-assets-generator"
+    "generate-pwa-assets": "pwa-assets-generator",
+    "lint": "biome check .",
+    "format": "biome check . --write"
   },
   "dependencies": {
     "@angular/core": "^21.0.5",
@@ -15,6 +17,7 @@
     "@evolu/web": "latest"
   },
   "devDependencies": {
+    "@evolu/biome-config": "workspace:*",
     "@analogjs/vite-plugin-angular": "^2.2.0",
     "@angular/build": "^21.0.3",
     "@angular/compiler-cli": "^21.0.5",

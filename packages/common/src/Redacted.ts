@@ -57,24 +57,24 @@ import type { Eq } from "./Eq.js";
  * @experimental
  */
 export interface Redacted<A> extends Brand<"Redacted">, Disposable {
-  /** The inner type. Useful for inference via `typeof redacted.Type`. */
-  readonly Type: A;
+	/** The inner type. Useful for inference via `typeof redacted.Type`. */
+	readonly Type: A;
 }
 
 /** Creates a {@link Redacted} wrapper for a sensitive value. */
 export const createRedacted = <A>(value: A): Redacted<A> => {
-  const redacted = Object.create(proto) as Redacted<A>;
-  registry.set(redacted, value);
-  return redacted;
+	const redacted = Object.create(proto) as Redacted<A>;
+	registry.set(redacted, value);
+	return redacted;
 };
 
 const proto = {
-  toString: () => redactedString,
-  toJSON: () => redactedString,
-  [Symbol.for("nodejs.util.inspect.custom")]: () => redactedString,
-  [Symbol.dispose](this: Redacted<unknown>) {
-    registry.delete(this);
-  },
+	toString: () => redactedString,
+	toJSON: () => redactedString,
+	[Symbol.for("nodejs.util.inspect.custom")]: () => redactedString,
+	[Symbol.dispose](this: Redacted<unknown>) {
+		registry.delete(this);
+	},
 };
 const redactedString = "<redacted>";
 const registry = new WeakMap<Redacted<unknown>, unknown>();
@@ -87,15 +87,15 @@ const registry = new WeakMap<Redacted<unknown>, unknown>();
  * sensitive values should feel intentional, not convenient.
  */
 export const revealRedacted = <A>(redacted: Redacted<A>): A => {
-  assert(registry.has(redacted), "Redacted value was not in registry");
-  return registry.get(redacted) as A;
+	assert(registry.has(redacted), "Redacted value was not in registry");
+	return registry.get(redacted) as A;
 };
 
 /** Checks if a value is a {@link Redacted} wrapper. */
 export const isRedacted = (value: unknown): value is Redacted<unknown> =>
-  typeof value === "object" &&
-  value !== null &&
-  Object.getPrototypeOf(value) === proto;
+	typeof value === "object" &&
+	value !== null &&
+	Object.getPrototypeOf(value) === proto;
 
 /**
  * Creates an {@link Eq} for {@link Redacted} values based on an equality function
@@ -113,6 +113,6 @@ export const isRedacted = (value: unknown): value is Redacted<unknown> =>
  * ```
  */
 export const createEqRedacted =
-  <A>(eq: Eq<A>): Eq<Redacted<A>> =>
-  (x, y) =>
-    eq(revealRedacted(x), revealRedacted(y));
+	<A>(eq: Eq<A>): Eq<Redacted<A>> =>
+	(x, y) =>
+		eq(revealRedacted(x), revealRedacted(y));

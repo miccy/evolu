@@ -1,9 +1,9 @@
 /** Detects if the code is running in React Native environment. */
 export const isReactNative =
-  typeof navigator !== "undefined" &&
-  "product" in navigator &&
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  (navigator as any).product === "ReactNative";
+	typeof navigator !== "undefined" &&
+	"product" in navigator &&
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+	(navigator as any).product === "ReactNative";
 
 /**
  * Detects if Node.js Buffer is available and should be used.
@@ -17,4 +17,4 @@ export const isReactNative =
  * @see https://github.com/craftzdog/react-native-quick-base64#installation
  */
 export const hasNodeBuffer =
-  !isReactNative && typeof globalThis.Buffer !== "undefined";
+	!isReactNative && typeof globalThis.Buffer !== "undefined";

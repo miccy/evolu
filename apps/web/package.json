@@ -7,7 +7,7 @@
     "clean": "rimraf .turbo .next node_modules",
     "dev": "next dev --webpack",
     "fix:docs": "bun ./scripts/fix-api-reference.mts",
-    "lint": "next lint",
+    "lint": "biome check .",
     "start": "next start"
   },
   "browserslist": "defaults, not ie <= 11",
@@ -51,6 +51,7 @@
     "zustand": "^5.0.9"
   },
   "devDependencies": {
+    "@evolu/biome-config": "workspace:*",
     "@evolu/tsconfig": "workspace:*",
     "@types/mdx": "^2.0.13",
     "@types/node": "^24.10.3",

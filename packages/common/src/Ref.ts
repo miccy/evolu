@@ -30,29 +30,29 @@ import type { Store } from "./Store.js";
  * ```
  */
 export interface Ref<T> {
-  /** Returns the current state. */
-  readonly get: () => T;
+	/** Returns the current state. */
+	readonly get: () => T;
 
-  /** Sets the state. */
-  readonly set: (state: T) => void;
+	/** Sets the state. */
+	readonly set: (state: T) => void;
 
-  /** Modifies the state using an updater function. */
-  readonly modify: (updater: (current: T) => T) => void;
+	/** Modifies the state using an updater function. */
+	readonly modify: (updater: (current: T) => T) => void;
 }
 
 /** Creates a {@link Ref} with the given initial state. */
 export const createRef = <T>(initialState: T): Ref<T> => {
-  let currentState = initialState;
+	let currentState = initialState;
 
-  return {
-    get: () => currentState,
+	return {
+		get: () => currentState,
 
-    set: (state) => {
-      currentState = state;
-    },
+		set: (state) => {
+			currentState = state;
+		},
 
-    modify: (updater) => {
-      currentState = updater(currentState);
-    },
-  };
+		modify: (updater) => {
+			currentState = updater(currentState);
+		},
+	};
 };

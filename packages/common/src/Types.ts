@@ -4,7 +4,7 @@
  * @module
  */
 
-import * as Kysely from "kysely";
+import type * as Kysely from "kysely";
 
 /**
  * Checks a condition on a value and returns a boolean.
@@ -80,8 +80,8 @@ export type Refinement<in A, out B extends A> = (a: A) => a is B;
  * ```
  */
 export type RefinementWithIndex<in A, out B extends A> = (
-  a: A,
-  index: number,
+	a: A,
+	index: number,
 ) => a is B;
 
 /**
@@ -107,11 +107,11 @@ export type RefinementWithIndex<in A, out B extends A> = (
  * ```
  */
 export type NullablePartial<
-  T,
-  NK extends keyof T = {
-    [K in keyof T]: null extends T[K] ? K : never;
-  }[keyof T],
-  NP = Pick<T, Exclude<keyof T, NK>> & Partial<Pick<T, NK>>,
+	T,
+	NK extends keyof T = {
+		[K in keyof T]: null extends T[K] ? K : never;
+	}[keyof T],
+	NP = Pick<T, Exclude<keyof T, NK>> & Partial<Pick<T, NK>>,
 > = { [K in keyof NP]: NP[K] };
 
 /**
@@ -138,14 +138,14 @@ export type Literal = string | number | bigint | boolean | undefined | null;
  * - True -> boolean
  */
 export type WidenLiteral<T extends Literal> = T extends string
-  ? string
-  : T extends number
-    ? number
-    : T extends boolean
-      ? boolean
-      : T extends bigint
-        ? bigint
-        : T;
+	? string
+	: T extends number
+		? number
+		: T extends boolean
+			? boolean
+			: T extends bigint
+				? bigint
+				: T;
 
 /**
  * Simplify an intersection type into a single mapped type.
@@ -172,4 +172,4 @@ export type Simplify<T> = Kysely.Simplify<T>;
  * unchanged.
  */
 export type PartialProp<T, K extends keyof T> = Omit<T, K> &
-  Partial<Pick<T, K>>;
+	Partial<Pick<T, K>>;

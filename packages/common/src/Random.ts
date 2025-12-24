@@ -18,17 +18,17 @@ import { Random as RandomLib } from "random";
  * ```
  */
 export interface Random {
-  /** Returns a floating point number in [0, 1). Just like Math.random(). */
-  next: () => number;
+	/** Returns a floating point number in [0, 1). Just like Math.random(). */
+	next: () => number;
 }
 
 export interface RandomDep {
-  random: Random;
+	random: Random;
 }
 
 /** Creates a {@link Random} using Math.random(). */
 export const createRandom = (): Random => ({
-  next: () => Math.random(),
+	next: () => Math.random(),
 });
 
 /**
@@ -36,10 +36,10 @@ export const createRandom = (): Random => ({
  * for tests.
  */
 export const createRandomWithSeed = (seed: string): Random => {
-  const random = new RandomLib(seed);
-  return {
-    next: () => random.next(),
-  };
+	const random = new RandomLib(seed);
+	return {
+		next: () => random.next(),
+	};
 };
 
 /**
@@ -48,7 +48,7 @@ export const createRandomWithSeed = (seed: string): Random => {
  * https://github.com/transitive-bullshit/random
  */
 export interface RandomLibDep {
-  random: RandomLib;
+	random: RandomLib;
 }
 
 /** Creates a `RandomLib` using the NPM `random` package. */
@@ -59,5 +59,5 @@ export const createRandomLib = (): RandomLib => new RandomLib();
  * is useful for tests.
  */
 export const createRandomLibWithSeed = (seed: string): RandomLibDep => ({
-  random: new RandomLib(seed),
+	random: new RandomLib(seed),
 });

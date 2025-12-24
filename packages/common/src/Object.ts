@@ -11,9 +11,9 @@
  * ```
  */
 export const isPlainObject = (
-  value: unknown,
+	value: unknown,
 ): value is Record<string, unknown> =>
-  Object.prototype.toString.call(value) === "[object Object]";
+	Object.prototype.toString.call(value) === "[object Object]";
 
 /**
  * A read-only `Record<K, V>` with `K extends keyof any` to preserve branded key
@@ -36,11 +36,11 @@ type StringKeyOf<T> = Extract<keyof T, string>;
  * ```
  */
 export const objectToEntries = <T extends Record<string, any>>(
-  record: T,
+	record: T,
 ): ReadonlyArray<[StringKeyOf<T>, T[StringKeyOf<T>]]> =>
-  Object.entries(record) as Array<
-    [StringKeyOf<T>, T[StringKeyOf<T>]]
-  > as ReadonlyArray<[StringKeyOf<T>, T[StringKeyOf<T>]]>;
+	Object.entries(record) as Array<
+		[StringKeyOf<T>, T[StringKeyOf<T>]]
+	> as ReadonlyArray<[StringKeyOf<T>, T[StringKeyOf<T>]]>;
 
 /**
  * Maps a `ReadonlyRecord<K, V>` to a new `ReadonlyRecord<K, U>`, preserving
@@ -48,27 +48,27 @@ export const objectToEntries = <T extends Record<string, any>>(
  * Uses `K extends string` for precision.
  */
 export const mapObject = <K extends string, V, U>(
-  record: ReadonlyRecord<K, V>,
-  fn: (value: V, key: K) => U,
+	record: ReadonlyRecord<K, V>,
+	fn: (value: V, key: K) => U,
 ): ReadonlyRecord<K, U> =>
-  Object.fromEntries(
-    Object.entries(record).map(([key, value]) => [
-      key,
-      fn(value as V, key as K),
-    ]),
-  ) as ReadonlyRecord<K, U>;
+	Object.fromEntries(
+		Object.entries(record).map(([key, value]) => [
+			key,
+			fn(value as V, key as K),
+		]),
+	) as ReadonlyRecord<K, U>;
 
 /** Conditionally excludes a property from an object. */
 export const excludeProp = <T extends object, K extends keyof T>(
-  obj: T,
-  prop: K,
-  condition?: boolean,
+	obj: T,
+	prop: K,
+	condition?: boolean,
 ): typeof condition extends true ? T : Omit<T, K> => {
-  if (condition) {
-    return { ...obj };
-  }
-  const { [prop]: _, ...rest } = obj;
-  return rest;
+	if (condition) {
+		return { ...obj };
+	}
+	const { [prop]: _, ...rest } = obj;
+	return rest;
 };
 
 /**
@@ -86,8 +86,8 @@ export const excludeProp = <T extends object, K extends keyof T>(
  * ```
  */
 export const createRecord = <K extends string = string, V = unknown>(): Record<
-  K,
-  V
+	K,
+	V
 > => Object.create(null) as Record<K, V>;
 
 /**
@@ -106,6 +106,6 @@ export const createRecord = <K extends string = string, V = unknown>(): Record<
  * ```
  */
 export const getProperty = <K extends string, V>(
-  record: ReadonlyRecord<K, V>,
-  key: string,
+	record: ReadonlyRecord<K, V>,
+	key: string,
 ): V | undefined => (key in record ? record[key as K] : undefined);
