@@ -1,31 +1,31 @@
 {
-  "name": "@example/angular-vite-pwa",
-  "version": "0.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "build": "tsc && vite build",
-    "dev": "vite",
-    "generate-pwa-assets": "pwa-assets-generator",
-    "lint": "biome check .",
-    "format": "biome check . --write"
-  },
-  "dependencies": {
-    "@angular/core": "^21.0.5",
-    "@angular/platform-browser": "^21.0.5",
-    "@evolu/common": "latest",
-    "@evolu/web": "latest"
-  },
-  "devDependencies": {
-    "@evolu/biome-config": "workspace:*",
-    "@analogjs/vite-plugin-angular": "^2.2.0",
-    "@angular/build": "^21.0.3",
-    "@angular/compiler-cli": "^21.0.5",
-    "@tailwindcss/vite": "^4.1.18",
-    "@vite-pwa/assets-generator": "^1.0.0",
-    "tailwindcss": "^4.1.18",
-    "typescript": "^5.9.3",
-    "vite": "^7.2.7",
-    "vite-plugin-pwa": "^1.0.2"
-  }
+	"name": "@example/angular-vite-pwa",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "tsc && vite build",
+		"dev": "vite",
+		"generate-pwa-assets": "pwa-assets-generator",
+		"lint": "biome check .",
+		"format": "biome check . --write"
+	},
+	"dependencies": {
+		"@angular/core": "^21.0.5",
+		"@angular/platform-browser": "^21.0.5",
+		"@evolu/common": "latest",
+		"@evolu/web": "latest"
+	},
+	"devDependencies": {
+		"@evolu/biome-config": "workspace:*",
+		"@analogjs/vite-plugin-angular": "^2.2.0",
+		"@angular/build": "^21.0.3",
+		"@angular/compiler-cli": "^21.0.5",
+		"@tailwindcss/vite": "^4.1.18",
+		"@vite-pwa/assets-generator": "^1.0.0",
+		"tailwindcss": "^4.1.18",
+		"typescript": "^5.9.3",
+		"vite": "^7.2.7",
+		"vite-plugin-pwa": "^1.0.2"
+	}
 }

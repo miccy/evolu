@@ -1,157 +1,157 @@
 <script lang="ts">
-  import * as Evolu from "@evolu/common";
-  import { appOwnerState, evoluSvelteDeps, queryState } from "@evolu/svelte";
+import * as Evolu from "@evolu/common";
+import { appOwnerState, evoluSvelteDeps, queryState } from "@evolu/svelte";
 
-  // Primary keys are branded types, preventing accidental use of IDs across
-  // different tables (e.g., a TodoId can't be used where a UserId is expected).
-  const TodoId = Evolu.id("Todo");
-  type TodoId = typeof TodoId.Type;
+// Primary keys are branded types, preventing accidental use of IDs across
+// different tables (e.g., a TodoId can't be used where a UserId is expected).
+const TodoId = Evolu.id("Todo");
+type TodoId = typeof TodoId.Type;
 
-  // Schema defines database structure with runtime validation.
-  // Column types validate data on insert/update/upsert.
-  const Schema = {
-    todo: {
-      id: TodoId,
-      // Branded type ensuring titles are non-empty and ≤100 chars.
-      title: Evolu.NonEmptyString100,
-      // SQLite doesn't support the boolean type; it uses 0 and 1 instead.
-      isCompleted: Evolu.nullOr(Evolu.SqliteBoolean),
-    },
-  };
+// Schema defines database structure with runtime validation.
+// Column types validate data on insert/update/upsert.
+const Schema = {
+	todo: {
+		id: TodoId,
+		// Branded type ensuring titles are non-empty and ≤100 chars.
+		title: Evolu.NonEmptyString100,
+		// SQLite doesn't support the boolean type; it uses 0 and 1 instead.
+		isCompleted: Evolu.nullOr(Evolu.SqliteBoolean),
+	},
+};
 
-  // Create Evolu instance for the Svelte platform.
-  const evolu = Evolu.createEvolu(evoluSvelteDeps)(Schema, {
-    name: Evolu.SimpleName.orThrow("minimal-example"),
+// Create Evolu instance for the Svelte platform.
+const evolu = Evolu.createEvolu(evoluSvelteDeps)(Schema, {
+	name: Evolu.SimpleName.orThrow("minimal-example"),
 
-    // ...(process.env.NODE_ENV === "development" && {
-    //   transports: [{ type: "WebSocket", url: "ws://localhost:4000" }],
-    // }),
-  });
+	// ...(process.env.NODE_ENV === "development" && {
+	//   transports: [{ type: "WebSocket", url: "ws://localhost:4000" }],
+	// }),
+});
 
-  /**
-   * Subscribe to unexpected Evolu errors (database, network, sync issues).
-   * These should not happen in normal operation, so always log them for
-   * debugging. Show users a friendly error message instead of technical
-   * details.
-   */
-  evolu.subscribeError(() => {
-    const error = evolu.getError();
-    if (!error) return;
+/**
+ * Subscribe to unexpected Evolu errors (database, network, sync issues).
+ * These should not happen in normal operation, so always log them for
+ * debugging. Show users a friendly error message instead of technical
+ * details.
+ */
+evolu.subscribeError(() => {
+	const error = evolu.getError();
+	if (!error) return;
 
-    alert("🚨 Evolu error occurred! Check the console.");
-    console.error(error);
-  });
+	alert("🚨 Evolu error occurred! Check the console.");
+	console.error(error);
+});
 
-  // Evolu uses Kysely for type-safe SQL (https://kysely.dev/).
-  const todosQuery = evolu.createQuery((db) =>
-    db
-      // Type-safe SQL: try autocomplete for table and column names.
-      .selectFrom("todo")
-      .select(["id", "title", "isCompleted"])
-      // Soft delete: filter out deleted rows.
-      .where("isDeleted", "is not", Evolu.sqliteTrue)
-      // Like with GraphQL, all columns except id are nullable in queries
-      // (even if defined without nullOr in the schema) to allow schema
-      // evolution without migrations. Filter nulls with where + $narrowType.
-      .where("title", "is not", null)
-      .$narrowType<{ title: Evolu.kysely.NotNull }>()
-      // Columns createdAt, updatedAt, isDeleted are auto-added to all tables.
-      .orderBy("createdAt"),
-  );
+// Evolu uses Kysely for type-safe SQL (https://kysely.dev/).
+const todosQuery = evolu.createQuery((db) =>
+	db
+		// Type-safe SQL: try autocomplete for table and column names.
+		.selectFrom("todo")
+		.select(["id", "title", "isCompleted"])
+		// Soft delete: filter out deleted rows.
+		.where("isDeleted", "is not", Evolu.sqliteTrue)
+		// Like with GraphQL, all columns except id are nullable in queries
+		// (even if defined without nullOr in the schema) to allow schema
+		// evolution without migrations. Filter nulls with where + $narrowType.
+		.where("title", "is not", null)
+		.$narrowType<{ title: Evolu.kysely.NotNull }>()
+		// Columns createdAt, updatedAt, isDeleted are auto-added to all tables.
+		.orderBy("createdAt"),
+);
 
-  const allTodos = queryState(evolu, () => todosQuery);
+const allTodos = queryState(evolu, () => todosQuery);
 
-  const appOwner = appOwnerState(evolu);
+const appOwner = appOwnerState(evolu);
 
-  const { insert, update } = evolu;
+const { insert, update } = evolu;
 
-  let newTodoTitle = $state("");
-  let showMnemonic = $state(false);
+let newTodoTitle = $state("");
+const showMnemonic = $state(false);
 
-  const handleAddTodo = () => {
-    const result = insert("todo", { title: newTodoTitle.trim() });
+const handleAddTodo = () => {
+	const result = insert("todo", { title: newTodoTitle.trim() });
 
-    if (result.ok) {
-      newTodoTitle = "";
-    } else {
-      alert(formatTypeError(result.error));
-    }
-  };
+	if (result.ok) {
+		newTodoTitle = "";
+	} else {
+		alert(formatTypeError(result.error));
+	}
+};
 
-  const handleToggleCompletedClick = (id: TodoId, isCompleted: boolean) => {
-    update("todo", { id, isCompleted: Number(!isCompleted) });
-  };
+const handleToggleCompletedClick = (id: TodoId, isCompleted: boolean) => {
+	update("todo", { id, isCompleted: Number(!isCompleted) });
+};
 
-  const handleRenameTodoClick = (id: TodoId, currentTitle: string) => {
-    const newTitle = window.prompt("Edit todo", currentTitle);
-    if (newTitle == null) return;
+const handleRenameTodoClick = (id: TodoId, currentTitle: string) => {
+	const newTitle = window.prompt("Edit todo", currentTitle);
+	if (newTitle == null) return;
 
-    const result = update("todo", { id, title: newTitle });
-    if (!result.ok) {
-      alert(formatTypeError(result.error));
-    }
-  };
+	const result = update("todo", { id, title: newTitle });
+	if (!result.ok) {
+		alert(formatTypeError(result.error));
+	}
+};
 
-  const handleDeleteTodoClick = (id: TodoId) => {
-    update("todo", {
-      id,
-      // Soft delete with isDeleted flag (CRDT-friendly, preserves sync history).
-      isDeleted: Evolu.sqliteTrue,
-    });
-  };
+const handleDeleteTodoClick = (id: TodoId) => {
+	update("todo", {
+		id,
+		// Soft delete with isDeleted flag (CRDT-friendly, preserves sync history).
+		isDeleted: Evolu.sqliteTrue,
+	});
+};
 
-  // Restore owner from mnemonic to sync data across devices.
-  const handleRestoreAppOwnerClick = () => {
-    const mnemonic = window.prompt("Enter your mnemonic to restore your data:");
-    if (mnemonic == null) return;
+// Restore owner from mnemonic to sync data across devices.
+const handleRestoreAppOwnerClick = () => {
+	const mnemonic = window.prompt("Enter your mnemonic to restore your data:");
+	if (mnemonic == null) return;
 
-    const result = Evolu.Mnemonic.from(mnemonic.trim());
-    if (!result.ok) {
-      alert(formatTypeError(result.error));
-      return;
-    }
+	const result = Evolu.Mnemonic.from(mnemonic.trim());
+	if (!result.ok) {
+		alert(formatTypeError(result.error));
+		return;
+	}
 
-    evolu.restoreAppOwner(result.value);
-  };
+	evolu.restoreAppOwner(result.value);
+};
 
-  const handleResetAppOwnerClick = () => {
-    if (confirm("Are you sure? This will delete all your local data.")) {
-      evolu.resetAppOwner();
-    }
-  };
+const handleResetAppOwnerClick = () => {
+	if (confirm("Are you sure? This will delete all your local data.")) {
+		evolu.resetAppOwner();
+	}
+};
 
-  const handleDownloadDatabaseClick = async () => {
-    void evolu.exportDatabase().then((array) => {
-      const blob = new Blob([array], { type: "application/x-sqlite3" });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "todos.sqlite3";
-      a.click();
-      window.URL.revokeObjectURL(url);
-    });
-  };
+const handleDownloadDatabaseClick = async () => {
+	void evolu.exportDatabase().then((array) => {
+		const blob = new Blob([array], { type: "application/x-sqlite3" });
+		const url = window.URL.createObjectURL(blob);
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = "todos.sqlite3";
+		a.click();
+		window.URL.revokeObjectURL(url);
+	});
+};
 
-  /**
-   * Formats Evolu Type errors into user-friendly messages.
-   *
-   * Evolu Type typed errors ensure every error type used in schema must have a
-   * formatter. TypeScript enforces this at compile-time, preventing unhandled
-   * validation errors from reaching users.
-   *
-   * The `createFormatTypeError` function handles both built-in and custom
-   * errors, and lets us override default formatting for specific errors.
-   */
-  const formatTypeError = Evolu.createFormatTypeError<
-    Evolu.MinLengthError | Evolu.MaxLengthError
-  >((error): string => {
-    switch (error.type) {
-      case "MinLength":
-        return `Text must be at least ${error.min} character${error.min === 1 ? "" : "s"} long`;
-      case "MaxLength":
-        return `Text is too long (maximum ${error.max} characters)`;
-    }
-  });
+/**
+ * Formats Evolu Type errors into user-friendly messages.
+ *
+ * Evolu Type typed errors ensure every error type used in schema must have a
+ * formatter. TypeScript enforces this at compile-time, preventing unhandled
+ * validation errors from reaching users.
+ *
+ * The `createFormatTypeError` function handles both built-in and custom
+ * errors, and lets us override default formatting for specific errors.
+ */
+const formatTypeError = Evolu.createFormatTypeError<
+	Evolu.MinLengthError | Evolu.MaxLengthError
+>((error): string => {
+	switch (error.type) {
+		case "MinLength":
+			return `Text must be at least ${error.min} character${error.min === 1 ? "" : "s"} long`;
+		case "MaxLength":
+			return `Text is too long (maximum ${error.max} characters)`;
+	}
+});
 </script>
 
 <div class="app-container">

@@ -1,1 +1,52 @@
-{"extends": ["@evolu/biome-config"]}
+{
+	"$schema": "https://biomejs.dev/schemas/2.3.10/schema.json",
+	"formatter": {
+		"enabled": false,
+		"indentStyle": "tab"
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": false,
+			"suspicious": {
+				"noShadowRestrictedNames": "off",
+				"noExplicitAny": "off",
+				"noImplicitAnyLet": "off",
+				"useIterableCallbackReturn": "off"
+			},
+			"correctness": {
+				"noConstantCondition": "off",
+				"noUnusedFunctionParameters": "off"
+			},
+			"style": {
+				"useImportType": "off"
+			},
+			"nursery": {
+				"noImportCycles": {
+					"level": "error",
+					"options": {
+						"ignoreTypes": true
+					}
+				}
+			}
+		}
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "double"
+		}
+	},
+	"css": {
+		"parser": {
+			"tailwindDirectives": true
+		}
+	},
+	"assist": {
+		"enabled": false,
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
+	}
+}

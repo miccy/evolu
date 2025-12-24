@@ -1,31 +1,31 @@
 {
-  "name": "@evolu/relay",
-  "version": "2.0.8",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "bun --watch src/index.ts",
-    "build": "tsc",
-    "start": "bun dist/index.js",
-    "clean": "rimraf .turbo node_modules dist data/evolu-relay.db",
-    "format": "biome check . --write",
-    "lint": "biome check ."
-  },
-  "files": [
-    "dist",
-    "README.md"
-  ],
-  "dependencies": {
-    "@evolu/common": "workspace:*",
-    "@evolu/nodejs": "workspace:*"
-  },
-  "devDependencies": {
-    "@evolu/biome-config": "workspace:*",
-    "@evolu/tsconfig": "workspace:*",
-    "@types/node": "^24.10.3",
-    "typescript": "^5.9.3"
-  },
-  "engines": {
-    "node": ">=24.0.0"
-  }
+	"name": "@evolu/relay",
+	"version": "2.0.8",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "bun --watch src/index.ts",
+		"build": "tsc",
+		"start": "bun dist/index.js",
+		"clean": "rimraf .turbo node_modules dist data/evolu-relay.db",
+		"format": "biome check . --write",
+		"lint": "biome check ."
+	},
+	"files": [
+		"dist",
+		"README.md"
+	],
+	"dependencies": {
+		"@evolu/common": "workspace:*",
+		"@evolu/nodejs": "workspace:*"
+	},
+	"devDependencies": {
+		"@evolu/biome-config": "workspace:*",
+		"@evolu/tsconfig": "workspace:*",
+		"@types/node": "^24.10.3",
+		"typescript": "^5.9.3"
+	},
+	"engines": {
+		"node": ">=24.0.0"
+	}
 }

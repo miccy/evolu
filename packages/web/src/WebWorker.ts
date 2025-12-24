@@ -15,7 +15,7 @@ import { constVoid, Worker } from "@evolu/common";
  * messages.
  */
 export const wrapWebWorker = <Input, Output>(
-  createWebWorker: () => globalThis.Worker,
+  createWebWorker: () => globalThis.Worker
 ): Worker<Input, Output> => {
   // Server.
   if (typeof document === "undefined")
@@ -42,7 +42,7 @@ export const wrapWebWorker = <Input, Output>(
 };
 
 export const wrapWebWorkerSelf = <Input, Output>(
-  worker: Worker<Input, Output>,
+  worker: Worker<Input, Output>
 ): void => {
   worker.onMessage((message) => {
     postMessage(message);

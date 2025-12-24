@@ -1,7 +1,7 @@
 import {
-  createFormatTypeError,
-  MaxLengthError,
-  MinLengthError,
+	createFormatTypeError,
+	type MaxLengthError,
+	type MinLengthError,
 } from "@evolu/common";
 
 /**
@@ -14,14 +14,14 @@ import {
  * end of this file.
  */
 export const formatTypeError = createFormatTypeError<
-  MinLengthError | MaxLengthError
+	MinLengthError | MaxLengthError
 >((error): string => {
-  switch (error.type) {
-    case "MinLength":
-      return `Text must be at least ${error.min} character${error.min === 1 ? "" : "s"} long`;
-    case "MaxLength":
-      return `Text is too long (maximum ${error.max} characters)`;
-  }
+	switch (error.type) {
+		case "MinLength":
+			return `Text must be at least ${error.min} character${error.min === 1 ? "" : "s"} long`;
+		case "MaxLength":
+			return `Text is too long (maximum ${error.max} characters)`;
+	}
 });
 
 /*

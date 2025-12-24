@@ -30,7 +30,7 @@ const sqlite3Promise = sqlite3InitModule();
 
 export const createWasmSqliteDriver: CreateSqliteDriver = async (
   name,
-  options,
+  options
 ) => {
   const sqlite3 = await sqlite3Promise;
   // This is used to make OPFS default vfs for multipleciphers
@@ -44,7 +44,7 @@ export const createWasmSqliteDriver: CreateSqliteDriver = async (
   } else if (options?.encryptionKey) {
     const pool = await sqlite3.installOpfsSAHPoolVfs({ directory: `.${name}` });
     db = new pool.OpfsSAHPoolDb(
-      "file:evolu1.db?vfs=multipleciphers-opfs-sahpool",
+      "file:evolu1.db?vfs=multipleciphers-opfs-sahpool"
     );
     db.exec(`
       PRAGMA cipher = 'sqlcipher';
@@ -62,7 +62,7 @@ export const createWasmSqliteDriver: CreateSqliteDriver = async (
     (sql) => db.prepare(sql),
     (statement) => {
       statement.finalize();
-    },
+    }
   );
 
   const driver: SqliteDriver = {

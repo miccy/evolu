@@ -1,5 +1,6 @@
 {
 	"$schema": "https://biomejs.dev/schemas/2.3.10/schema.json",
+	"extends": ["@evolu/biome-config"],
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
@@ -7,55 +8,6 @@
 	},
 	"files": {
 		"ignoreUnknown": false,
-		"includes": ["**", "!!apps/web", "!!examples"]
-	},
-	"formatter": {
-		"enabled": false,
-		"indentStyle": "tab"
-	},
-	"linter": {
-		"enabled": true,
-		"rules": {
-			"recommended": false,
-			"suspicious": {
-				"noShadowRestrictedNames": "off",
-				"noExplicitAny": "off",
-				"noImplicitAnyLet": "off",
-				"useIterableCallbackReturn": "off"
-			},
-			"correctness": {
-				"noConstantCondition": "off",
-				"noUnusedFunctionParameters": "off"
-			},
-			"style": {
-				"useImportType": "off"
-			},
-			"nursery": {
-				"noImportCycles": {
-					"level": "error",
-					"options": {
-						"ignoreTypes": true
-					}
-				}
-			}
-		}
-	},
-	"javascript": {
-		"formatter": {
-			"quoteStyle": "double"
-		}
-	},
-	"css": {
-		"parser": {
-			"tailwindDirectives": true
-		}
-	},
-	"assist": {
-		"enabled": false,
-		"actions": {
-			"source": {
-				"organizeImports": "on"
-			}
-		}
+		"includes": ["**", "!!packages", "!!apps", "!!examples"]
 	}
 }

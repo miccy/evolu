@@ -1,1 +1,1 @@
-{"extends": ["@evolu/biome-config"]}
+{ "extends": ["@evolu/biome-config"] }

@@ -3,9 +3,9 @@ import { AppService } from "./app.service";
 import { PwaBadgeComponent } from "./pwa-badge.component";
 
 @Component({
-  selector: "app-root",
-  imports: [PwaBadgeComponent],
-  template: `
+	selector: "app-root",
+	imports: [PwaBadgeComponent],
+	template: `
     <div class="min-h-screen px-8 py-8">
       <div class="mx-auto max-w-md">
         <div class="mb-2 flex items-center justify-between pb-4">
@@ -149,62 +149,62 @@ import { PwaBadgeComponent } from "./pwa-badge.component";
   `,
 })
 export class App {
-  protected readonly appService = inject(AppService);
+	protected readonly appService = inject(AppService);
 
-  protected readonly showMnemonic = signal(false);
-  protected readonly newTodoTitle = signal("");
+	protected readonly showMnemonic = signal(false);
+	protected readonly newTodoTitle = signal("");
 
-  /** Todos */
+	/** Todos */
 
-  protected setNewTodoTitle(value: string) {
-    this.newTodoTitle.set(value);
-  }
+	protected setNewTodoTitle(value: string) {
+		this.newTodoTitle.set(value);
+	}
 
-  protected handleKeyDown(event: KeyboardEvent) {
-    if (event.key === "Enter") {
-      this.handleAddTodo();
-    }
-  }
+	protected handleKeyDown(event: KeyboardEvent) {
+		if (event.key === "Enter") {
+			this.handleAddTodo();
+		}
+	}
 
-  protected handleAddTodo() {
-    const title = this.newTodoTitle().trim();
-    if (!title) return;
+	protected handleAddTodo() {
+		const title = this.newTodoTitle().trim();
+		if (!title) return;
 
-    this.appService.addTodo(title);
-    this.newTodoTitle.set("");
-  }
+		this.appService.addTodo(title);
+		this.newTodoTitle.set("");
+	}
 
-  protected handleRenameTodo(id: string, currentTitle: string) {
-    const title = window.prompt("Todo Name", currentTitle);
-    if (title == null) return;
+	protected handleRenameTodo(id: string, currentTitle: string) {
+		const title = window.prompt("Todo Name", currentTitle);
+		if (title == null) return;
 
-    this.appService.renameTodo(id, title);
-  }
+		this.appService.renameTodo(id, title);
+	}
 
-  protected handleDeleteTodo(id: string) {
-    this.appService.deleteTodo(id);
-  }
+	protected handleDeleteTodo(id: string) {
+		this.appService.deleteTodo(id);
+	}
 
-  /** Footer button handlers */
+	/** Footer button handlers */
 
-  protected handleShowMnemonic() {
-    this.showMnemonic.update((show) => !show);
-  }
+	protected handleShowMnemonic() {
+		this.showMnemonic.update((show) => !show);
+	}
 
-  protected handleRestoreOwner() {
-    const mnemonic = window.prompt("Your Mnemonic");
-    if (mnemonic == null) return;
+	protected handleRestoreOwner() {
+		const mnemonic = window.prompt("Your Mnemonic");
+		if (mnemonic == null) return;
 
-    void this.appService.restoreFromMnemonic(mnemonic);
-  }
+		void this.appService.restoreFromMnemonic(mnemonic);
+	}
 
-  protected handleResetOwner() {
-    if (confirm("Are you sure? It will delete all your local data.")) {
-      void this.appService.resetAppOwner();
-    }
-  }
+	protected handleResetOwner() {
+		if (confirm("Are you sure? It will delete all your local data.")) {
+			void this.appService.resetAppOwner();
+		}
+	}
 
-  protected handleDownloadDatabase() {
-    void this.appService.downloadDatabase();
-  }
+	protected handleDownloadDatabase() {
+		void this.appService.downloadDatabase();
+	}
 }

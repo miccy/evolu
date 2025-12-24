@@ -1,93 +1,93 @@
 import { bytesToHex, utf8ToBytes } from "@noble/ciphers/utils.js";
 import { assert, expect, test } from "vitest";
 import {
-  createSlip21,
-  createSymmetricCrypto,
-  createPadmePaddedLength,
-  createPadmePadding,
+	createPadmePaddedLength,
+	createPadmePadding,
+	createSlip21,
+	createSymmetricCrypto,
 } from "../src/Crypto.js";
 import { mnemonicToOwnerSecret } from "../src/index.js";
 import { ok } from "../src/Result.js";
-import { Mnemonic, NonNegativeInt } from "../src/Type.js";
+import { Mnemonic, type NonNegativeInt } from "../src/Type.js";
 import { testDeps, testOwner } from "./_deps.js";
 
 test("SymmetricCrypto", () => {
-  const symmetricCrypto = createSymmetricCrypto(testDeps);
+	const symmetricCrypto = createSymmetricCrypto(testDeps);
 
-  const plaintext = utf8ToBytes("Hello, world!");
-  const encryptionKey = testOwner.encryptionKey;
+	const plaintext = utf8ToBytes("Hello, world!");
+	const encryptionKey = testOwner.encryptionKey;
 
-  const { nonce, ciphertext } = symmetricCrypto.encrypt(
-    plaintext,
-    encryptionKey,
-  );
+	const { nonce, ciphertext } = symmetricCrypto.encrypt(
+		plaintext,
+		encryptionKey,
+	);
 
-  expect(symmetricCrypto.decrypt(ciphertext, encryptionKey, nonce)).toEqual(
-    ok(plaintext),
-  );
+	expect(symmetricCrypto.decrypt(ciphertext, encryptionKey, nonce)).toEqual(
+		ok(plaintext),
+	);
 
-  const result = symmetricCrypto.decrypt(
-    new Uint8Array([1, 2, 3]),
-    encryptionKey,
-    nonce,
-  );
-  assert(!result.ok);
-  expect(result.error.type).toBe("SymmetricCryptoDecryptError");
+	const result = symmetricCrypto.decrypt(
+		new Uint8Array([1, 2, 3]),
+		encryptionKey,
+		nonce,
+	);
+	assert(!result.ok);
+	expect(result.error.type).toBe("SymmetricCryptoDecryptError");
 });
 
 test("createPadmePaddedLength", () => {
-  [
-    [0, 0],
-    [1, 1],
-    [2, 2],
-    [3, 3],
-    [4, 4],
-    [8, 8],
-    [9, 10],
-    [15, 16],
-    [16, 16],
-    [17, 18],
-    [31, 32],
-    [32, 32],
-    [33, 36],
-    [64, 64],
-    [65, 72],
-    [100, 104],
-    [128, 128],
-    [129, 144],
-    [200, 208],
-    [256, 256],
-    [300, 304],
-    [512, 512],
-    [1000, 1024],
-    [1024, 1024],
-    [2048, 2048],
-    [4096, 4096],
-    [10000, 10240],
-    [65536, 65536],
-    [100000, 100352],
-    [1048576, 1048576],
-  ].forEach(([input, expected]) => {
-    expect(createPadmePaddedLength(input as NonNegativeInt)).toBe(expected);
-    expect(createPadmePadding(input as NonNegativeInt).length).toBe(
-      expected - input,
-    );
-  });
+	[
+		[0, 0],
+		[1, 1],
+		[2, 2],
+		[3, 3],
+		[4, 4],
+		[8, 8],
+		[9, 10],
+		[15, 16],
+		[16, 16],
+		[17, 18],
+		[31, 32],
+		[32, 32],
+		[33, 36],
+		[64, 64],
+		[65, 72],
+		[100, 104],
+		[128, 128],
+		[129, 144],
+		[200, 208],
+		[256, 256],
+		[300, 304],
+		[512, 512],
+		[1000, 1024],
+		[1024, 1024],
+		[2048, 2048],
+		[4096, 4096],
+		[10000, 10240],
+		[65536, 65536],
+		[100000, 100352],
+		[1048576, 1048576],
+	].forEach(([input, expected]) => {
+		expect(createPadmePaddedLength(input as NonNegativeInt)).toBe(expected);
+		expect(createPadmePadding(input as NonNegativeInt).length).toBe(
+			expected - input,
+		);
+	});
 });
 
 test("createSlip21", () => {
-  const mnemonic = Mnemonic.orThrow(
-    "all all all all all all all all all all all all",
-  );
-  const ownerSecret = mnemonicToOwnerSecret(mnemonic);
+	const mnemonic = Mnemonic.orThrow(
+		"all all all all all all all all all all all all",
+	);
+	const ownerSecret = mnemonicToOwnerSecret(mnemonic);
 
-  const ownerId = createSlip21(ownerSecret, ["Evolu", "Owner Id"]);
-  expect(bytesToHex(ownerId)).toMatchInlineSnapshot(
-    `"bce9b26dad1a3364c105eb65e7aef032fdffd53816819ac4664442c4a915327f"`,
-  );
+	const ownerId = createSlip21(ownerSecret, ["Evolu", "Owner Id"]);
+	expect(bytesToHex(ownerId)).toMatchInlineSnapshot(
+		`"bce9b26dad1a3364c105eb65e7aef032fdffd53816819ac4664442c4a915327f"`,
+	);
 
-  const encryptionKey = createSlip21(ownerSecret, ["Evolu", "Encryption Key"]);
-  expect(bytesToHex(encryptionKey)).toMatchInlineSnapshot(
-    `"abf2095887bc74adda889a572e29a407a457a39bfdd4202d34ee6eac5c28effc"`,
-  );
+	const encryptionKey = createSlip21(ownerSecret, ["Evolu", "Encryption Key"]);
+	expect(bytesToHex(encryptionKey)).toMatchInlineSnapshot(
+		`"abf2095887bc74adda889a572e29a407a457a39bfdd4202d34ee6eac5c28effc"`,
+	);
 });

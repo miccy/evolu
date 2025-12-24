@@ -192,6 +192,7 @@ const TodoItem: FC<{
 			</label>
 			<div className="flex gap-1">
 				<button
+					type="button"
 					onClick={handleRenameClick}
 					className="p-1 text-gray-400 transition-colors hover:text-blue-600"
 					title="Edit"
@@ -199,6 +200,7 @@ const TodoItem: FC<{
 					<IconEdit className="size-4" />
 				</button>
 				<button
+					type="button"
 					onClick={handleDeleteClick}
 					className="p-1 text-gray-400 transition-colors hover:text-red-600"
 					title="Delete"
@@ -271,13 +273,13 @@ const OwnerActions: FC = () => {
 					<div className="bg-gray-50 p-3">
 						<label className="mb-2 block text-xs font-medium text-gray-700">
 							Your Mnemonic (keep this safe!)
+							<textarea
+								value={appOwner.mnemonic}
+								readOnly
+								rows={3}
+								className="w-full border-b border-gray-300 bg-white px-2 py-1 font-mono text-xs focus:border-blue-500 focus:outline-none"
+							/>
 						</label>
-						<textarea
-							value={appOwner.mnemonic}
-							readOnly
-							rows={3}
-							className="w-full border-b border-gray-300 bg-white px-2 py-1 font-mono text-xs focus:border-blue-500 focus:outline-none"
-						/>
 					</div>
 				)}
 
@@ -312,6 +314,7 @@ const Button: FC<{
 
 	return (
 		<button
+			type="button"
 			className={clsx(baseClasses, variantClasses, className)}
 			onClick={onClick}
 		>

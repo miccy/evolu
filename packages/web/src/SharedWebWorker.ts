@@ -58,7 +58,7 @@ type SharedWebWorkerChannelMessage<Input, Output> =
  */
 export const createSharedWebWorker = <Input, Output>(
   name: SimpleName,
-  createWebWorker: () => globalThis.Worker,
+  createWebWorker: () => globalThis.Worker
 ): Worker<Input, Output> => {
   // Server.
   if (typeof document === "undefined")
@@ -78,7 +78,7 @@ export const createSharedWebWorker = <Input, Output>(
 
   // Listen for owner-ready and worker responses
   channel.onmessage = (
-    event: MessageEvent<SharedWebWorkerChannelMessage<Input, Output>>,
+    event: MessageEvent<SharedWebWorkerChannelMessage<Input, Output>>
   ) => {
     const data = event.data;
     if (data.type === "owner-ready") {
@@ -108,7 +108,7 @@ export const createSharedWebWorker = <Input, Output>(
 
     // Forward messages from channel to worker
     channel.onmessage = (
-      event: MessageEvent<SharedWebWorkerChannelMessage<Input, Output>>,
+      event: MessageEvent<SharedWebWorkerChannelMessage<Input, Output>>
     ) => {
       const data = event.data;
       if (data.type === "to-worker") {
