@@ -6,7 +6,7 @@
     "build": "cross-env NODE_OPTIONS=--max-old-space-size=4096 next build --webpack",
     "clean": "rimraf .turbo .next node_modules",
     "dev": "next dev --webpack",
-    "fix:docs": "node --experimental-strip-types ./scripts/fix-api-reference.mts",
+    "fix:docs": "bun ./scripts/fix-api-reference.mts",
     "lint": "next lint",
     "start": "next start"
   },
