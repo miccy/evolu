@@ -82,8 +82,8 @@
     "react-native-nitro-modules": "^0.32.0",
     "react-native-sensitive-info": "^6.0.0-rc.8",
     "react-native-svg": "^15.14.0",
-    "typescript": "^5.9.2",
-    "vitest": "^4.0.16"
+    "typescript": "catalog:shared",
+    "vitest": "catalog:shared"
   },
   "peerDependencies": {
     "@evolu/common": "^7.4.1",

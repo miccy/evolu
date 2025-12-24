@@ -44,8 +44,8 @@
     "rss": "^1.2.2",
     "shiki": "^3.20.0",
     "simple-functional-loader": "^1.2.1",
-    "tailwindcss": "^4.1.18",
-    "typescript": "^5.9.2",
+    "tailwindcss": "catalog:shared",
+    "typescript": "catalog:shared",
     "unist-util-filter": "^5.0.1",
     "unist-util-visit": "^5.0.0",
     "zustand": "^5.0.7"
@@ -53,7 +53,7 @@
   "devDependencies": {
     "@evolu/tsconfig": "workspace:*",
     "@types/mdx": "^2.0.13",
-    "@types/node": "^22.19.3",
+    "@types/node": "catalog:shared",
     "@types/react": "catalog:react19",
     "@types/react-dom": "catalog:react19",
     "@types/react-highlight-words": "^0.20.1",
