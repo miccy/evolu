@@ -22,7 +22,7 @@
 		"@mdx-js/react": "^3.1.0",
 		"@next/mdx": "^16.1.1",
 		"@sindresorhus/slugify": "^3.0.0",
-		"@tabler/icons-react": "^3.35.0",
+		"@tabler/icons-react": "^3.36.1",
 		"@tailwindcss/forms": "^0.5.11",
 		"@tailwindcss/postcss": "^4.1.18",
 		"@tailwindcss/typography": "^0.5.16",
@@ -48,14 +48,14 @@
 		"typescript": "^5.9.3",
 		"unist-util-filter": "^5.0.1",
 		"unist-util-visit": "^5.0.0",
-		"zustand": "^5.0.9"
+		"zustand": "^5.0.10"
 	},
 	"devDependencies": {
 		"@evolu/biome-config": "workspace:*",
 		"@evolu/tsconfig": "workspace:*",
 		"@types/mdx": "^2.0.13",
-		"@types/node": "^24.10.3",
-		"@types/react": "^19.1.17",
+		"@types/node": "^24.10.7",
+		"@types/react": "^19.2.8",
 		"@types/react-dom": "^19.1.11",
 		"@types/react-highlight-words": "^0.20.1",
 		"@types/rss": "^0.0.32",

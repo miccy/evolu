@@ -11,21 +11,21 @@
 		"format": "biome check . --write"
 	},
 	"dependencies": {
-		"@angular/core": "^21.0.5",
-		"@angular/platform-browser": "^21.0.5",
+		"@angular/core": "^21.0.8",
+		"@angular/platform-browser": "^21.0.8",
 		"@evolu/common": "latest",
 		"@evolu/web": "latest"
 	},
 	"devDependencies": {
 		"@evolu/biome-config": "workspace:*",
-		"@analogjs/vite-plugin-angular": "^2.2.0",
-		"@angular/build": "^21.0.3",
-		"@angular/compiler-cli": "^21.0.5",
+		"@analogjs/vite-plugin-angular": "^2.2.1",
+		"@angular/build": "^21.0.5",
+		"@angular/compiler-cli": "^21.0.8",
 		"@tailwindcss/vite": "^4.1.18",
 		"@vite-pwa/assets-generator": "^1.0.0",
 		"tailwindcss": "^4.1.18",
 		"typescript": "^5.9.3",
-		"vite": "^7.2.7",
+		"vite": "^7.3.1",
 		"vite-plugin-pwa": "^1.0.2"
 	}
 }
