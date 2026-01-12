@@ -7,6 +7,6 @@ export * from "./components/index.js";
 
 /** Creates Evolu dependencies for React web with React DOM flush sync support. */
 export const createEvoluDeps = (): EvoluDeps => {
-  const deps = createWebEvoluDeps();
-  return { ...deps, flushSync };
+	const deps = createWebEvoluDeps();
+	return { ...deps, flushSync };
 };

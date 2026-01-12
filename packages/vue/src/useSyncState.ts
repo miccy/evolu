@@ -4,7 +4,7 @@ import { Ref } from "vue";
 
 /** Subscribe to {@link SyncState} changes. */
 export const useSyncState = (): Ref<SyncState> => {
-  /*
+	/*
   const evolu = useEvolu();
 
   const syncState = ref(evolu.getSyncState());
@@ -16,6 +16,6 @@ export const useSyncState = (): Ref<SyncState> => {
   return syncState;
    */
 
-  // not updated in the Evolu core yet
-  throw new Error("TODO");
+	// not updated in the Evolu core yet
+	throw new Error("TODO");
 };

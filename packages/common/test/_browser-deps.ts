@@ -6,8 +6,8 @@
  */
 import { RandomBytes } from "../src/Crypto.js";
 import {
-  createRandomLibWithSeed,
-  createRandomWithSeed,
+	createRandomLibWithSeed,
+	createRandomWithSeed,
 } from "../src/Random.js";
 import { createRunner, Runner, RunnerConfigDep } from "../src/Task.js";
 import { createTestTime, createTime, TimeDep } from "../src/Time.js";
@@ -15,12 +15,12 @@ import { createTestTime, createTime, TimeDep } from "../src/Time.js";
 export const testRandomLib = createRandomLibWithSeed("evolu").random;
 
 export const testRandomBytes: RandomBytes = {
-  create: (bytesLength) => {
-    const array = Array.from({ length: bytesLength }, () =>
-      testRandomLib.int(0, 255),
-    );
-    return new Uint8Array(array);
-  },
+	create: (bytesLength) => {
+		const array = Array.from({ length: bytesLength }, () =>
+			testRandomLib.int(0, 255),
+		);
+		return new Uint8Array(array);
+	},
 } as RandomBytes;
 
 /** Seeded random for tests. */
@@ -31,11 +31,11 @@ export const testTime = createTestTime();
 
 /** Creates a test runner with configurable deps. */
 export const testCreateRunner = (
-  deps?: Partial<TimeDep & RunnerConfigDep>,
+	deps?: Partial<TimeDep & RunnerConfigDep>,
 ): Runner =>
-  createRunner({
-    random: testRandom,
-    randomBytes: testRandomBytes,
-    time: deps?.time ?? createTime(),
-    ...(deps?.runnerConfig && { runnerConfig: deps.runnerConfig }),
-  });
+	createRunner({
+		random: testRandom,
+		randomBytes: testRandomBytes,
+		time: deps?.time ?? createTime(),
+		...(deps?.runnerConfig && { runnerConfig: deps.runnerConfig }),
+	});

@@ -1,61 +1,61 @@
 {
-  "name": "@evolu/web",
-  "version": "2.4.0",
-  "description": "Evolu for web",
-  "keywords": [
-    "evolu",
-    "web"
-  ],
-  "author": "Daniel Steigerwald <daniel@steigerwald.cz>",
-  "license": "MIT",
-  "repository": "evoluhq/evolu",
-  "bugs": {
-    "url": "https://github.com/evoluhq/evolu/issues"
-  },
-  "homepage": "https://evolu.dev",
-  "type": "module",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "browser": "./dist/index.js"
-    }
-  },
-  "files": [
-    "dist/**",
-    "src/**",
-    "README.md"
-  ],
-  "scripts": {
-    "dev": "tsc --watch",
-    "build": "rimraf dist && tsc",
-    "_test": "vitest run",
-    "test:watch": "vitest",
-    "clean": "rimraf .turbo node_modules dist",
-    "format": "prettier --write \"src/*.{ts,tsx,md}\""
-  },
-  "dependencies": {
-    "@evolu/sqlite-wasm": "2.2.4",
-    "idb-keyval": "^6.2.2"
-  },
-  "devDependencies": {
-    "@evolu/common": "workspace:*",
-    "@evolu/tsconfig": "workspace:*",
-    "@types/sharedworker": "^0.0.205",
-    "@types/web-locks-api": "^0.0.5",
-    "typescript": "^5.9.3",
-    "user-agent-data-types": "^0.4.2",
-    "vitest": "^4.0.16"
-  },
-  "peerDependencies": {
-    "@evolu/common": "^7.4.1"
-  },
-  "publishConfig": {
-    "access": "public"
-  },
-  "engines": {
-    "node": ">=24.0.0"
-  },
-  "sideEffects": []
+	"name": "@evolu/web",
+	"version": "2.4.0",
+	"description": "Evolu for web",
+	"keywords": [
+		"evolu",
+		"web"
+	],
+	"author": "Daniel Steigerwald <daniel@steigerwald.cz>",
+	"license": "MIT",
+	"repository": "evoluhq/evolu",
+	"bugs": {
+		"url": "https://github.com/evoluhq/evolu/issues"
+	},
+	"homepage": "https://evolu.dev",
+	"type": "module",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js",
+			"browser": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist/**",
+		"src/**",
+		"README.md"
+	],
+	"scripts": {
+		"dev": "tsc --watch",
+		"build": "rimraf dist && tsc",
+		"_test": "vitest run",
+		"test:watch": "vitest",
+		"clean": "rimraf .turbo node_modules dist",
+		"format": "prettier --write \"src/*.{ts,tsx,md}\""
+	},
+	"dependencies": {
+		"@evolu/sqlite-wasm": "2.2.4",
+		"idb-keyval": "^6.2.2"
+	},
+	"devDependencies": {
+		"@evolu/common": "workspace:*",
+		"@evolu/tsconfig": "workspace:*",
+		"@types/sharedworker": "^0.0.205",
+		"@types/web-locks-api": "^0.0.5",
+		"typescript": "^5.9.3",
+		"user-agent-data-types": "^0.4.2",
+		"vitest": "^4.0.16"
+	},
+	"peerDependencies": {
+		"@evolu/common": "^7.4.1"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"engines": {
+		"node": ">=24.0.0"
+	},
+	"sideEffects": []
 }

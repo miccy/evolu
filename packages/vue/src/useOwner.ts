@@ -8,9 +8,9 @@ import { useEvolu } from "./useEvolu.js";
  * defined in Evolu config if the owner has no transports defined.
  */
 export const useOwner = (owner: SyncOwner | null): void => {
-  if (owner == null) return;
+	if (owner == null) return;
 
-  const evolu = useEvolu();
+	const evolu = useEvolu();
 
-  evolu.useOwner(owner);
+	evolu.useOwner(owner);
 };

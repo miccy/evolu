@@ -24,27 +24,27 @@ import type { Runner } from "./Task.js";
  * @experimental
  */
 export interface Tracer {
-  /**
-   * Wraps a sync function in a traced span.
-   *
-   * Records start time, end time, and success/failure status.
-   */
-  readonly span: <T>(name: string, fn: () => T) => T;
+	/**
+	 * Wraps a sync function in a traced span.
+	 *
+	 * Records start time, end time, and success/failure status.
+	 */
+	readonly span: <T>(name: string, fn: () => T) => T;
 
-  /** Records an event/fact (e.g., "user.purchased", "sync.completed"). */
-  readonly event: (name: string, data?: unknown) => void;
+	/** Records an event/fact (e.g., "user.purchased", "sync.completed"). */
+	readonly event: (name: string, data?: unknown) => void;
 }
 
 export interface TracerDep {
-  readonly tracer: Tracer;
+	readonly tracer: Tracer;
 }
 
 /** Configuration for tracing. */
 export interface TracerConfig {
-  /** When `true`, enables trace data collection. Can be toggled at runtime. */
-  readonly tracing?: Ref<boolean>;
+	/** When `true`, enables trace data collection. Can be toggled at runtime. */
+	readonly tracing?: Ref<boolean>;
 }
 
 export interface TracerConfigDep {
-  readonly tracerConfig: TracerConfig;
+	readonly tracerConfig: TracerConfig;
 }

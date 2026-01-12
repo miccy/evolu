@@ -10,10 +10,8 @@ import { GlobalErrorScope } from "./Error.js";
  *
  * @see https://developer.mozilla.org/en-US/docs/Web/API/Worker
  */
-export interface Worker<Input, Output = never> extends MessagePort<
-  Input,
-  Output
-> {}
+export interface Worker<Input, Output = never>
+	extends MessagePort<Input, Output> {}
 
 /**
  * Platform-agnostic SharedWorker.
@@ -28,8 +26,8 @@ export interface Worker<Input, Output = never> extends MessagePort<
  * @see https://developer.mozilla.org/en-US/docs/Web/API/SharedWorker
  */
 export interface SharedWorker<Input, Output = never> extends Disposable {
-  /** Port for communicating with the shared worker. */
-  readonly port: MessagePort<Input, Output>;
+	/** Port for communicating with the shared worker. */
+	readonly port: MessagePort<Input, Output>;
 }
 
 /**
@@ -48,27 +46,27 @@ export interface SharedWorker<Input, Output = never> extends Disposable {
  * @see https://developer.mozilla.org/en-US/docs/Web/API/MessagePort
  */
 export interface MessagePort<Input, Output = never> extends Disposable {
-  /**
-   * Sends a message.
-   *
-   * Transferable objects in the optional transfer array will have their
-   * ownership transferred to the receiver, making them unusable in the sender.
-   * The transferable objects must be reachable from the message object.
-   */
-  readonly postMessage: (
-    message: Input,
-    transfer?: ReadonlyArray<Transferable>,
-  ) => void;
+	/**
+	 * Sends a message.
+	 *
+	 * Transferable objects in the optional transfer array will have their
+	 * ownership transferred to the receiver, making them unusable in the sender.
+	 * The transferable objects must be reachable from the message object.
+	 */
+	readonly postMessage: (
+		message: Input,
+		transfer?: ReadonlyArray<Transferable>,
+	) => void;
 
-  /**
-   * Callback for messages from the port (like `onmessage` on MessagePort).
-   *
-   * @see https://developer.mozilla.org/en-US/docs/Web/API/MessagePort/message_event
-   */
-  onMessage: ((message: Output) => void) | null;
+	/**
+	 * Callback for messages from the port (like `onmessage` on MessagePort).
+	 *
+	 * @see https://developer.mozilla.org/en-US/docs/Web/API/MessagePort/message_event
+	 */
+	onMessage: ((message: Output) => void) | null;
 
-  /** The native underlying port. Use this only for transferring via postMessage. */
-  readonly native: NativeMessagePort;
+	/** The native underlying port. Use this only for transferring via postMessage. */
+	readonly native: NativeMessagePort;
 }
 
 export type Transferable = NativeMessagePort | ArrayBuffer;
@@ -84,11 +82,11 @@ export type NativeMessagePort = Brand<"NativeMessagePort">;
 
 /** Factory function to create a {@link MessagePort} from a native port. */
 export type CreateMessagePort = <Input, Output = never>(
-  nativePort: NativeMessagePort,
+	nativePort: NativeMessagePort,
 ) => MessagePort<Input, Output>;
 
 export interface CreateMessagePortDep {
-  readonly createMessagePort: CreateMessagePort;
+	readonly createMessagePort: CreateMessagePort;
 }
 
 /**
@@ -137,21 +135,21 @@ export interface CreateMessagePortDep {
  * @see https://developer.mozilla.org/en-US/docs/Web/API/MessageChannel
  */
 export interface MessageChannel<Input, Output = never> extends Disposable {
-  /** The first port of the channel. */
-  readonly port1: MessagePort<Input, Output>;
+	/** The first port of the channel. */
+	readonly port1: MessagePort<Input, Output>;
 
-  /** The second port of the channel. */
-  readonly port2: MessagePort<Output, Input>;
+	/** The second port of the channel. */
+	readonly port2: MessagePort<Output, Input>;
 }
 
 /** Factory function to create a {@link MessageChannel}. */
 export type CreateMessageChannel = <Input, Output = never>() => MessageChannel<
-  Input,
-  Output
+	Input,
+	Output
 >;
 
 export interface CreateMessageChannelDep {
-  readonly createMessageChannel: CreateMessageChannel;
+	readonly createMessageChannel: CreateMessageChannel;
 }
 
 // Worker-side types (for code running inside workers)
@@ -164,7 +162,8 @@ export interface CreateMessageChannelDep {
  * inside the worker.
  */
 export interface WorkerScope<Input, Output = never>
-  extends MessagePort<Output, Input>, GlobalErrorScope {}
+	extends MessagePort<Output, Input>,
+		GlobalErrorScope {}
 
 /**
  * Typed scope for code running inside a shared worker.
@@ -173,6 +172,7 @@ export interface WorkerScope<Input, Output = never>
  * inside the shared worker, providing typed `onConnect` callbacks.
  */
 export interface SharedWorkerScope<Input, Output = never>
-  extends GlobalErrorScope, Disposable {
-  onConnect: ((port: MessagePort<Output, Input>) => void) | null;
+	extends GlobalErrorScope,
+		Disposable {
+	onConnect: ((port: MessagePort<Output, Input>) => void) | null;
 }

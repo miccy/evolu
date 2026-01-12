@@ -15,26 +15,26 @@ import symmetricDifference from "set.prototype.symmetricdifference";
 import union from "set.prototype.union";
 
 export const installPolyfills = (): void => {
-  installAbortSignalPolyfill();
+	installAbortSignalPolyfill();
 
-  difference.shim();
-  intersection.shim();
-  isDisjointFrom.shim();
-  isSubsetOf.shim();
-  isSupersetOf.shim();
-  symmetricDifference.shim();
-  union.shim();
+	difference.shim();
+	intersection.shim();
+	isDisjointFrom.shim();
+	isSubsetOf.shim();
+	isSupersetOf.shim();
+	symmetricDifference.shim();
+	union.shim();
 
-  // @see https://github.com/facebook/hermes/pull/1452
-  if (typeof Promise.withResolvers === "undefined") {
-    // @ts-expect-error This is OK.
-    Promise.withResolvers = () => {
-      let resolve, reject;
-      const promise = new Promise((res, rej) => {
-        resolve = res;
-        reject = rej;
-      });
-      return { promise, resolve, reject };
-    };
-  }
+	// @see https://github.com/facebook/hermes/pull/1452
+	if (typeof Promise.withResolvers === "undefined") {
+		// @ts-expect-error This is OK.
+		Promise.withResolvers = () => {
+			let resolve, reject;
+			const promise = new Promise((res, rej) => {
+				resolve = res;
+				reject = rej;
+			});
+			return { promise, resolve, reject };
+		};
+	}
 };

@@ -11,13 +11,13 @@ import dynamic from "next/dynamic";
  * non-private (public or shared) data.
  */
 const EvoluMinimalExample = dynamic(
-  () =>
-    import("@/components/EvoluMinimalExample").then(
-      (mod) => mod.EvoluMinimalExample,
-    ),
-  { ssr: false },
+	() =>
+		import("@/components/EvoluMinimalExample").then(
+			(mod) => mod.EvoluMinimalExample,
+		),
+	{ ssr: false },
 );
 
 export default function Home(): React.ReactNode {
-  return <EvoluMinimalExample />;
+	return <EvoluMinimalExample />;
 }

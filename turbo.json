@@ -1,41 +1,41 @@
 {
-  "$schema": "https://turborepo.org/schema.json",
-  "globalEnv": ["NODE_ENV", "PORT", "ENABLE_EXPERIMENTAL_COREPACK"],
-  "tasks": {
-    "build": {
-      "outputs": [
-        "dist/**",
-        ".next/**",
-        "!.next/cache/**",
-        "node_modules/.cache/metro/**"
-      ],
-      "dependsOn": ["^build"]
-    },
-    "dev": {
-      "cache": false,
-      "persistent": true
-    },
-    "start": {
-      "cache": false,
-      "persistent": true
-    },
-    "test": {},
-    "test:coverage": {
-      "outputs": ["coverage/**"]
-    },
-    "test:watch": {
-      "cache": false,
-      "persistent": true
-    },
-    "lint": {},
-    "format": {
-      "cache": false
-    },
-    "clean": {
-      "cache": false
-    },
-    "bench": {
-      "cache": false
-    }
-  }
+	"$schema": "https://turborepo.org/schema.json",
+	"globalEnv": ["NODE_ENV", "PORT", "ENABLE_EXPERIMENTAL_COREPACK"],
+	"tasks": {
+		"build": {
+			"outputs": [
+				"dist/**",
+				".next/**",
+				"!.next/cache/**",
+				"node_modules/.cache/metro/**"
+			],
+			"dependsOn": ["^build"]
+		},
+		"dev": {
+			"cache": false,
+			"persistent": true
+		},
+		"start": {
+			"cache": false,
+			"persistent": true
+		},
+		"test": {},
+		"test:coverage": {
+			"outputs": ["coverage/**"]
+		},
+		"test:watch": {
+			"cache": false,
+			"persistent": true
+		},
+		"lint": {},
+		"format": {
+			"cache": false
+		},
+		"clean": {
+			"cache": false
+		},
+		"bench": {
+			"cache": false
+		}
+	}
 }

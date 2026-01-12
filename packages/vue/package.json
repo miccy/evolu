@@ -1,57 +1,57 @@
 {
-  "name": "@evolu/vue",
-  "version": "1.4.0",
-  "description": "Evolu for Vue",
-  "keywords": [
-    "evolu",
-    "vue"
-  ],
-  "homepage": "https://evolu.dev",
-  "bugs": {
-    "url": "https://github.com/evoluhq/evolu/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/evoluhq/evolu.git"
-  },
-  "license": "MIT",
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "browser": "./dist/index.js"
-    }
-  },
-  "types": "./dist/index.d.ts",
-  "files": [
-    "dist/**",
-    "src/**",
-    "README.md"
-  ],
-  "scripts": {
-    "dev": "tsc --watch",
-    "build": "rimraf dist && tsc",
-    "clean": "rimraf .turbo node_modules dist",
-    "format": "biome check . --write",
-    "lint": "biome check ."
-  },
-  "devDependencies": {
-    "@evolu/biome-config": "workspace:*",
-    "@evolu/common": "workspace:*",
-    "@evolu/tsconfig": "workspace:*",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.16"
-  },
-  "peerDependencies": {
-    "@evolu/common": "^7.4.1",
-    "vue": ">=3.5.26"
-  },
-  "publishConfig": {
-    "access": "public"
-  },
-  "engines": {
-    "node": ">=24.0.0"
-  },
-  "sideEffects": []
+	"name": "@evolu/vue",
+	"version": "1.4.0",
+	"description": "Evolu for Vue",
+	"keywords": [
+		"evolu",
+		"vue"
+	],
+	"homepage": "https://evolu.dev",
+	"bugs": {
+		"url": "https://github.com/evoluhq/evolu/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/evoluhq/evolu.git"
+	},
+	"license": "MIT",
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js",
+			"browser": "./dist/index.js"
+		}
+	},
+	"types": "./dist/index.d.ts",
+	"files": [
+		"dist/**",
+		"src/**",
+		"README.md"
+	],
+	"scripts": {
+		"dev": "tsc --watch",
+		"build": "rimraf dist && tsc",
+		"clean": "rimraf .turbo node_modules dist",
+		"format": "biome check . --write",
+		"lint": "biome check ."
+	},
+	"devDependencies": {
+		"@evolu/biome-config": "workspace:*",
+		"@evolu/common": "workspace:*",
+		"@evolu/tsconfig": "workspace:*",
+		"typescript": "^5.9.3",
+		"vitest": "^4.0.16"
+	},
+	"peerDependencies": {
+		"@evolu/common": "^7.4.1",
+		"vue": ">=3.5.26"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"engines": {
+		"node": ">=24.0.0"
+	},
+	"sideEffects": []
 }

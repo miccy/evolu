@@ -9,18 +9,18 @@ import type { createUseEvolu } from "./createUseEvolu.js";
  * Applications should prefer {@link createUseEvolu} for proper typing.
  */
 export const useEvolu = (): Evolu => {
-  let evolu: Evolu | null | undefined = inject(EvoluContext, null);
+	let evolu: Evolu | null | undefined = inject(EvoluContext, null);
 
-  const vueInstance = getCurrentInstance();
-  if (!evolu && vueInstance) {
-    evolu = evoluInstanceMap.get(vueInstance);
-  }
+	const vueInstance = getCurrentInstance();
+	if (!evolu && vueInstance) {
+		evolu = evoluInstanceMap.get(vueInstance);
+	}
 
-  if (!evolu) {
-    throw new Error(
-      "Could not find Evolu context value. Call provideEvolu() or wrap components with <EvoluProvider>.",
-    );
-  }
+	if (!evolu) {
+		throw new Error(
+			"Could not find Evolu context value. Call provideEvolu() or wrap components with <EvoluProvider>.",
+		);
+	}
 
-  return evolu;
+	return evolu;
 };

@@ -35,23 +35,23 @@ import { useIsSsr } from "./useIsSsr.js";
  * ```
  */
 export const useQuery = <R extends Row>(
-  query: Query<R>,
-  options: Partial<{
-    /** Without subscribing to changes. */
-    readonly once: boolean;
+	query: Query<R>,
+	options: Partial<{
+		/** Without subscribing to changes. */
+		readonly once: boolean;
 
-    /** Reuse existing promise instead of loading so query will not suspense. */
-    readonly promise: Promise<QueryRows<R>>;
-  }> = {},
+		/** Reuse existing promise instead of loading so query will not suspense. */
+		readonly promise: Promise<QueryRows<R>>;
+	}> = {},
 ): QueryRows<R> => {
-  const evolu = useEvolu();
-  const isSSR = useIsSsr();
+	const evolu = useEvolu();
+	const isSSR = useIsSsr();
 
-  if (isSSR) {
-    if (!options.promise) void evolu.loadQuery(query);
-  } else {
-    use(options.promise ?? evolu.loadQuery(query));
-  }
+	if (isSSR) {
+		if (!options.promise) void evolu.loadQuery(query);
+	} else {
+		use(options.promise ?? evolu.loadQuery(query));
+	}
 
-  return useQuerySubscription(query, options);
+	return useQuerySubscription(query, options);
 };

@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 
 test("TODO", () => {
-  expect(1).toBe(1);
+	expect(1).toBe(1);
 });
 
 // import { CallbackId } from "../../src/Callbacks.js";

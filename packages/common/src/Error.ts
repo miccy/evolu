@@ -14,56 +14,56 @@ import type { tryAsync, trySync } from "./Result.js";
  * Use {@link createUnknownError} to create instances.
  */
 export interface UnknownError {
-  readonly type: "UnknownError";
-  readonly error: unknown;
+	readonly type: "UnknownError";
+	readonly error: unknown;
 }
 
 /** Creates an {@link UnknownError} from an unknown error. */
 export const createUnknownError = (error: unknown): UnknownError => {
-  const convertError = (err: Error): Record<string, unknown> => {
-    const result: Record<string, unknown> = Object.getOwnPropertyNames(
-      err,
-    ).reduce<Record<string, unknown>>((acc, key) => {
-      const value = (err as never)[key] as unknown;
-      if (key === "cause" && value instanceof Error) {
-        // Recursively process the `cause` property
-        acc[key] = convertError(value);
-      } else if (typeof value !== "function") {
-        acc[key] = value;
-      }
-      return acc;
-    }, {});
-    return result;
-  };
+	const convertError = (err: Error): Record<string, unknown> => {
+		const result: Record<string, unknown> = Object.getOwnPropertyNames(
+			err,
+		).reduce<Record<string, unknown>>((acc, key) => {
+			const value = (err as never)[key] as unknown;
+			if (key === "cause" && value instanceof Error) {
+				// Recursively process the `cause` property
+				acc[key] = convertError(value);
+			} else if (typeof value !== "function") {
+				acc[key] = value;
+			}
+			return acc;
+		}, {});
+		return result;
+	};
 
-  if (error instanceof Error) {
-    return {
-      type: "UnknownError",
-      error: convertError(error),
-    };
-  }
+	if (error instanceof Error) {
+		return {
+			type: "UnknownError",
+			error: convertError(error),
+		};
+	}
 
-  try {
-    // Clone other values that are structured-clonable
-    return {
-      type: "UnknownError",
-      error: structuredClone(error),
-    };
-  } catch {
-    // Fallback for non-clonable values
-    try {
-      return {
-        type: "UnknownError",
-        error: String(error),
-      };
-    } catch {
-      // Final fallback if even `String(error)` fails
-      return {
-        type: "UnknownError",
-        error: "[Unserializable Object]",
-      };
-    }
-  }
+	try {
+		// Clone other values that are structured-clonable
+		return {
+			type: "UnknownError",
+			error: structuredClone(error),
+		};
+	} catch {
+		// Fallback for non-clonable values
+		try {
+			return {
+				type: "UnknownError",
+				error: String(error),
+			};
+		} catch {
+			// Final fallback if even `String(error)` fails
+			return {
+				type: "UnknownError",
+				error: "[Unserializable Object]",
+			};
+		}
+	}
 };
 
 /**
@@ -82,12 +82,12 @@ export const createUnknownError = (error: unknown): UnknownError => {
  * Implementations use {@link handleGlobalError} to forward errors.
  */
 export interface GlobalErrorScope extends Disposable {
-  /**
-   * Callback for uncaught errors and unhandled promise rejections.
-   *
-   * Set this to receive notifications when global errors occur in this scope.
-   */
-  onError: ((error: UnknownError) => void) | null;
+	/**
+	 * Callback for uncaught errors and unhandled promise rejections.
+	 *
+	 * Set this to receive notifications when global errors occur in this scope.
+	 */
+	onError: ((error: UnknownError) => void) | null;
 }
 
 /**
@@ -97,13 +97,13 @@ export interface GlobalErrorScope extends Disposable {
  * {@link createUnknownError} and calls the callback.
  */
 export const handleGlobalError = (
-  scope: GlobalErrorScope,
-  error: unknown,
+	scope: GlobalErrorScope,
+	error: unknown,
 ): void => {
-  if (scope.onError == null) {
-    // eslint-disable-next-line no-console
-    console.error("Unhandled global error:", error);
-    assert(false, "onError must be set before global errors occur");
-  }
-  scope.onError(createUnknownError(error));
+	if (scope.onError == null) {
+		// eslint-disable-next-line no-console
+		console.error("Unhandled global error:", error);
+		assert(false, "onError must be set before global errors occur");
+	}
+	scope.onError(createUnknownError(error));
 };

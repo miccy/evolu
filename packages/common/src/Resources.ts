@@ -371,15 +371,15 @@ export interface DisposableDep extends Disposable {}
 
 /** Creates a {@link DisposableDep} from `Disposable`. */
 export const createDisposableDep = (disposable: Disposable): DisposableDep => ({
-  [Symbol.dispose]: () => {
-    disposable[Symbol.dispose]();
-  },
+	[Symbol.dispose]: () => {
+		disposable[Symbol.dispose]();
+	},
 });
 
 export interface DisposableStackDep {
-  readonly disposableStack: DisposableStack;
+	readonly disposableStack: DisposableStack;
 }
 
 export interface AsyncDisposableStackDep {
-  readonly asyncDisposableStack: AsyncDisposableStack;
+	readonly asyncDisposableStack: AsyncDisposableStack;
 }

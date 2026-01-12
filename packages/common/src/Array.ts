@@ -172,12 +172,12 @@ export const emptyArray: ReadonlyArray<never> = [];
  */
 export function isNonEmptyArray<T>(array: Array<T>): array is NonEmptyArray<T>;
 export function isNonEmptyArray<T>(
-  array: ReadonlyArray<T>,
+	array: ReadonlyArray<T>,
 ): array is NonEmptyReadonlyArray<T>;
 export function isNonEmptyArray<T>(
-  array: ReadonlyArray<T>,
+	array: ReadonlyArray<T>,
 ): array is NonEmptyReadonlyArray<T> {
-  return array.length > 0;
+	return array.length > 0;
 }
 
 /**
@@ -192,10 +192,10 @@ export function isNonEmptyArray<T>(
  * @category Transformations
  */
 export const appendToArray = <T>(
-  array: ReadonlyArray<T>,
-  item: T,
+	array: ReadonlyArray<T>,
+	item: T,
 ): NonEmptyReadonlyArray<T> =>
-  [...array, item] as ReadonlyArray<T> as NonEmptyReadonlyArray<T>;
+	[...array, item] as ReadonlyArray<T> as NonEmptyReadonlyArray<T>;
 
 /**
  * Prepends an item to an array, returning a new non-empty readonly array.
@@ -209,8 +209,8 @@ export const appendToArray = <T>(
  * @category Transformations
  */
 export const prependToArray = <T>(
-  array: ReadonlyArray<T>,
-  item: T,
+	array: ReadonlyArray<T>,
+	item: T,
 ): NonEmptyReadonlyArray<T> => [item, ...array] as NonEmptyReadonlyArray<T>;
 
 /**
@@ -227,18 +227,18 @@ export const prependToArray = <T>(
  * @category Transformations
  */
 export function mapArray<T, U>(
-  array: NonEmptyReadonlyArray<T> | NonEmptyArray<T>,
-  mapper: (item: T, index: number) => U,
+	array: NonEmptyReadonlyArray<T> | NonEmptyArray<T>,
+	mapper: (item: T, index: number) => U,
 ): NonEmptyReadonlyArray<U>;
 export function mapArray<T, U>(
-  array: ReadonlyArray<T> | Array<T>,
-  mapper: (item: T, index: number) => U,
+	array: ReadonlyArray<T> | Array<T>,
+	mapper: (item: T, index: number) => U,
 ): ReadonlyArray<U>;
 export function mapArray<T, U>(
-  array: ReadonlyArray<T> | Array<T>,
-  mapper: (item: T, index: number) => U,
+	array: ReadonlyArray<T> | Array<T>,
+	mapper: (item: T, index: number) => U,
 ): ReadonlyArray<U> {
-  return array.map(mapper) as ReadonlyArray<U>;
+	return array.map(mapper) as ReadonlyArray<U>;
 }
 
 /**
@@ -273,37 +273,37 @@ export function mapArray<T, U>(
  * @category Transformations
  */
 export function flatMapArray<T>(
-  array:
-    | NonEmptyReadonlyArray<NonEmptyReadonlyArray<T> | NonEmptyArray<T>>
-    | NonEmptyArray<NonEmptyReadonlyArray<T> | NonEmptyArray<T>>,
+	array:
+		| NonEmptyReadonlyArray<NonEmptyReadonlyArray<T> | NonEmptyArray<T>>
+		| NonEmptyArray<NonEmptyReadonlyArray<T> | NonEmptyArray<T>>,
 ): NonEmptyReadonlyArray<T>;
 export function flatMapArray<T>(
-  array:
-    | ReadonlyArray<ReadonlyArray<T> | Array<T>>
-    | Array<ReadonlyArray<T> | Array<T>>,
+	array:
+		| ReadonlyArray<ReadonlyArray<T> | Array<T>>
+		| Array<ReadonlyArray<T> | Array<T>>,
 ): ReadonlyArray<T>;
 export function flatMapArray<T, U>(
-  array: NonEmptyReadonlyArray<T> | NonEmptyArray<T>,
-  mapper: (
-    item: T,
-    index: number,
-  ) => NonEmptyReadonlyArray<U> | NonEmptyArray<U>,
+	array: NonEmptyReadonlyArray<T> | NonEmptyArray<T>,
+	mapper: (
+		item: T,
+		index: number,
+	) => NonEmptyReadonlyArray<U> | NonEmptyArray<U>,
 ): NonEmptyReadonlyArray<U>;
 export function flatMapArray<T, U>(
-  array: ReadonlyArray<T> | Array<T>,
-  mapper: (item: T, index: number) => ReadonlyArray<U> | Array<U>,
+	array: ReadonlyArray<T> | Array<T>,
+	mapper: (item: T, index: number) => ReadonlyArray<U> | Array<U>,
 ): ReadonlyArray<U>;
 export function flatMapArray<T, U>(
-  array: ReadonlyArray<T> | Array<T>,
-  mapper: (
-    item: T,
-    index: number,
-  ) => ReadonlyArray<U> | Array<U> = identity as (
-    item: T,
-    index: number,
-  ) => ReadonlyArray<U> | Array<U>,
+	array: ReadonlyArray<T> | Array<T>,
+	mapper: (
+		item: T,
+		index: number,
+	) => ReadonlyArray<U> | Array<U> = identity as (
+		item: T,
+		index: number,
+	) => ReadonlyArray<U> | Array<U>,
 ): ReadonlyArray<U> {
-  return array.flatMap(mapper) as ReadonlyArray<U>;
+	return array.flatMap(mapper) as ReadonlyArray<U>;
 }
 
 /**
@@ -322,22 +322,22 @@ export function flatMapArray<T, U>(
  * @category Transformations
  */
 export function concatArrays<T>(
-  first: NonEmptyReadonlyArray<T> | NonEmptyArray<T>,
-  second: ReadonlyArray<T> | Array<T>,
+	first: NonEmptyReadonlyArray<T> | NonEmptyArray<T>,
+	second: ReadonlyArray<T> | Array<T>,
 ): NonEmptyReadonlyArray<T>;
 export function concatArrays<T>(
-  first: ReadonlyArray<T> | Array<T>,
-  second: NonEmptyReadonlyArray<T> | NonEmptyArray<T>,
+	first: ReadonlyArray<T> | Array<T>,
+	second: NonEmptyReadonlyArray<T> | NonEmptyArray<T>,
 ): NonEmptyReadonlyArray<T>;
 export function concatArrays<T>(
-  first: ReadonlyArray<T> | Array<T>,
-  second: ReadonlyArray<T> | Array<T>,
+	first: ReadonlyArray<T> | Array<T>,
+	second: ReadonlyArray<T> | Array<T>,
 ): ReadonlyArray<T>;
 export function concatArrays<T>(
-  first: ReadonlyArray<T> | Array<T>,
-  second: ReadonlyArray<T> | Array<T>,
+	first: ReadonlyArray<T> | Array<T>,
+	second: ReadonlyArray<T> | Array<T>,
 ): ReadonlyArray<T> {
-  return [...first, ...second] as ReadonlyArray<T>;
+	return [...first, ...second] as ReadonlyArray<T>;
 }
 
 /**
@@ -370,18 +370,18 @@ export function concatArrays<T>(
  * @category Transformations
  */
 export function filterArray<T, S extends T>(
-  array: ReadonlyArray<T>,
-  refinement: RefinementWithIndex<T, S>,
+	array: ReadonlyArray<T>,
+	refinement: RefinementWithIndex<T, S>,
 ): ReadonlyArray<S>;
 export function filterArray<T>(
-  array: ReadonlyArray<T>,
-  predicate: PredicateWithIndex<T>,
+	array: ReadonlyArray<T>,
+	predicate: PredicateWithIndex<T>,
 ): ReadonlyArray<T>;
 export function filterArray<T>(
-  array: ReadonlyArray<T>,
-  predicate: PredicateWithIndex<T>,
+	array: ReadonlyArray<T>,
+	predicate: PredicateWithIndex<T>,
 ): ReadonlyArray<T> {
-  return array.filter(predicate) as ReadonlyArray<T>;
+	return array.filter(predicate) as ReadonlyArray<T>;
 }
 
 /**
@@ -412,28 +412,28 @@ export function filterArray<T>(
  * @category Transformations
  */
 export function dedupeArray<T>(
-  array: NonEmptyReadonlyArray<T> | NonEmptyArray<T>,
-  by?: (item: T) => unknown,
+	array: NonEmptyReadonlyArray<T> | NonEmptyArray<T>,
+	by?: (item: T) => unknown,
 ): NonEmptyReadonlyArray<T>;
 export function dedupeArray<T>(
-  array: ReadonlyArray<T> | Array<T>,
-  by?: (item: T) => unknown,
+	array: ReadonlyArray<T> | Array<T>,
+	by?: (item: T) => unknown,
 ): ReadonlyArray<T>;
 export function dedupeArray<T>(
-  array: ReadonlyArray<T>,
-  by?: (item: T) => unknown,
+	array: ReadonlyArray<T>,
+	by?: (item: T) => unknown,
 ): ReadonlyArray<T> {
-  if (by == null) {
-    return Array.from(new Set(array)) as ReadonlyArray<T>;
-  }
+	if (by == null) {
+		return Array.from(new Set(array)) as ReadonlyArray<T>;
+	}
 
-  const seen = new Set<unknown>();
-  return array.filter((item) => {
-    const key = by(item);
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  }) as ReadonlyArray<T>;
+	const seen = new Set<unknown>();
+	return array.filter((item) => {
+		const key = by(item);
+		if (seen.has(key)) return false;
+		seen.add(key);
+		return true;
+	}) as ReadonlyArray<T>;
 }
 
 /**
@@ -475,29 +475,29 @@ export function dedupeArray<T>(
  * @category Transformations
  */
 export function partitionArray<T, S extends T>(
-  array: ReadonlyArray<T>,
-  refinement: RefinementWithIndex<T, S>,
+	array: ReadonlyArray<T>,
+	refinement: RefinementWithIndex<T, S>,
 ): readonly [ReadonlyArray<S>, ReadonlyArray<Exclude<T, S>>];
 export function partitionArray<T>(
-  array: ReadonlyArray<T>,
-  predicate: PredicateWithIndex<T>,
+	array: ReadonlyArray<T>,
+	predicate: PredicateWithIndex<T>,
 ): readonly [ReadonlyArray<T>, ReadonlyArray<T>];
 export function partitionArray<T>(
-  array: ReadonlyArray<T>,
-  predicate: PredicateWithIndex<T>,
+	array: ReadonlyArray<T>,
+	predicate: PredicateWithIndex<T>,
 ): readonly [ReadonlyArray<T>, ReadonlyArray<T>] {
-  const trueArray: Array<T> = [];
-  const falseArray: Array<T> = [];
+	const trueArray: Array<T> = [];
+	const falseArray: Array<T> = [];
 
-  for (let i = 0; i < array.length; i++) {
-    if (predicate(array[i], i)) {
-      trueArray.push(array[i]);
-    } else {
-      falseArray.push(array[i]);
-    }
-  }
+	for (let i = 0; i < array.length; i++) {
+		if (predicate(array[i], i)) {
+			trueArray.push(array[i]);
+		} else {
+			falseArray.push(array[i]);
+		}
+	}
 
-  return [trueArray as ReadonlyArray<T>, falseArray as ReadonlyArray<T>];
+	return [trueArray as ReadonlyArray<T>, falseArray as ReadonlyArray<T>];
 }
 
 /**
@@ -514,18 +514,18 @@ export function partitionArray<T>(
  * @category Transformations
  */
 export function sortArray<T>(
-  array: NonEmptyReadonlyArray<T>,
-  compareFn?: (a: T, b: T) => number,
+	array: NonEmptyReadonlyArray<T>,
+	compareFn?: (a: T, b: T) => number,
 ): NonEmptyReadonlyArray<T>;
 export function sortArray<T>(
-  array: ReadonlyArray<T>,
-  compareFn?: (a: T, b: T) => number,
+	array: ReadonlyArray<T>,
+	compareFn?: (a: T, b: T) => number,
 ): ReadonlyArray<T>;
 export function sortArray<T>(
-  array: ReadonlyArray<T>,
-  compareFn?: (a: T, b: T) => number,
+	array: ReadonlyArray<T>,
+	compareFn?: (a: T, b: T) => number,
 ): ReadonlyArray<T> {
-  return array.toSorted(compareFn) as ReadonlyArray<T>;
+	return array.toSorted(compareFn) as ReadonlyArray<T>;
 }
 
 /**
@@ -542,11 +542,11 @@ export function sortArray<T>(
  * @category Transformations
  */
 export function reverseArray<T>(
-  array: NonEmptyReadonlyArray<T>,
+	array: NonEmptyReadonlyArray<T>,
 ): NonEmptyReadonlyArray<T>;
 export function reverseArray<T>(array: ReadonlyArray<T>): ReadonlyArray<T>;
 export function reverseArray<T>(array: ReadonlyArray<T>): ReadonlyArray<T> {
-  return array.toReversed() as ReadonlyArray<T>;
+	return array.toReversed() as ReadonlyArray<T>;
 }
 
 /**
@@ -564,10 +564,10 @@ export function reverseArray<T>(array: ReadonlyArray<T>): ReadonlyArray<T> {
  * @category Transformations
  */
 export const spliceArray = <T>(
-  array: ReadonlyArray<T>,
-  start: number,
-  deleteCount: number,
-  ...items: ReadonlyArray<T>
+	array: ReadonlyArray<T>,
+	start: number,
+	deleteCount: number,
+	...items: ReadonlyArray<T>
 ): ReadonlyArray<T> => array.toSpliced(start, deleteCount, ...items);
 
 /**
@@ -595,7 +595,7 @@ export const firstInArray = <T>(array: NonEmptyReadonlyArray<T>): T => array[0];
  * @category Accessors
  */
 export const lastInArray = <T>(array: NonEmptyReadonlyArray<T>): T =>
-  array[array.length - 1];
+	array[array.length - 1];
 
 /**
  * Shifts (removes and returns) the first element from a non-empty mutable
@@ -616,7 +616,7 @@ export const lastInArray = <T>(array: NonEmptyReadonlyArray<T>): T =>
  * @category Mutations
  */
 export const shiftFromArray = <T>(array: NonEmptyArray<T>): T =>
-  array.shift() as T;
+	array.shift() as T;
 
 /**
  * Pops (removes and returns) the last element from a non-empty mutable array.

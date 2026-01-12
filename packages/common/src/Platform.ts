@@ -1,9 +1,9 @@
 /** Detects if the code is running in React Native environment. */
 export const isReactNative =
-  typeof navigator !== "undefined" &&
-  "product" in navigator &&
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  (navigator as any).product === "ReactNative";
+	typeof navigator !== "undefined" &&
+	"product" in navigator &&
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+	(navigator as any).product === "ReactNative";
 
 /**
  * Detects if Node.js Buffer is available and should be used.
@@ -17,7 +17,7 @@ export const isReactNative =
  * @see https://github.com/craftzdog/react-native-quick-base64#installation
  */
 export const hasNodeBuffer =
-  !isReactNative && typeof globalThis.Buffer !== "undefined";
+	!isReactNative && typeof globalThis.Buffer !== "undefined";
 
 /**
  * FlushSync is for libraries like React to flush updates synchronously inside
@@ -32,7 +32,7 @@ export const hasNodeBuffer =
 export type FlushSync = (callback: () => void) => void;
 
 export interface FlushSyncDep {
-  readonly flushSync: FlushSync;
+	readonly flushSync: FlushSync;
 }
 
 /**
@@ -47,5 +47,5 @@ export interface FlushSyncDep {
 export type ReloadApp = (url?: string) => void;
 
 export interface ReloadAppDep {
-  readonly reloadApp: ReloadApp;
+	readonly reloadApp: ReloadApp;
 }

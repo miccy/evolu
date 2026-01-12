@@ -29,28 +29,28 @@ import { useEvolu } from "./useEvolu.js";
  * ```
  */
 export const useQuery = <R extends Row>(
-  query: Query<R>,
-  options: Partial<{
-    /** Without subscribing to changes. */
-    readonly once: boolean;
-    /** Reuse existing promise instead of loading so query will not suspense. */
-    readonly promise: Promise<QueryRows<R>>;
-  }> = {},
+	query: Query<R>,
+	options: Partial<{
+		/** Without subscribing to changes. */
+		readonly once: boolean;
+		/** Reuse existing promise instead of loading so query will not suspense. */
+		readonly promise: Promise<QueryRows<R>>;
+	}> = {},
 ): Readonly<Ref<QueryRows<R>>> => {
-  const evolu = useEvolu();
-  const rows = shallowRef(emptyRows as QueryRows<R>);
+	const evolu = useEvolu();
+	const rows = shallowRef(emptyRows as QueryRows<R>);
 
-  void (options.promise ?? evolu.loadQuery(query)).then((result) => {
-    rows.value = result;
-  });
+	void (options.promise ?? evolu.loadQuery(query)).then((result) => {
+		rows.value = result;
+	});
 
-  if (!options.once) {
-    const unsubscribe = evolu.subscribeQuery(query)(() => {
-      rows.value = evolu.getQueryRows(query);
-    });
+	if (!options.once) {
+		const unsubscribe = evolu.subscribeQuery(query)(() => {
+			rows.value = evolu.getQueryRows(query);
+		});
 
-    onScopeDispose(unsubscribe);
-  }
+		onScopeDispose(unsubscribe);
+	}
 
-  return shallowReadonly(rows);
+	return shallowReadonly(rows);
 };

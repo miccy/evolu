@@ -13,25 +13,25 @@ export * as kysely from "./PublicKysely.js";
 export type { InferRow, Query, QueryRows, Row } from "./Query.js";
 export type { EvoluSchema } from "./Schema.js";
 export type {
-  NetworkError,
-  PaymentRequiredError,
-  ServerError,
-  SyncOwner,
-  SyncState,
-  SyncStateInitial,
-  SyncStateIsNotSynced,
-  SyncStateIsSynced,
-  SyncStateIsSyncing,
+	NetworkError,
+	PaymentRequiredError,
+	ServerError,
+	SyncOwner,
+	SyncState,
+	SyncStateInitial,
+	SyncStateIsNotSynced,
+	SyncStateIsSynced,
+	SyncStateIsSyncing,
 } from "./Sync.js";
 export {
-  Timestamp,
-  timestampBytesToTimestamp,
-  timestampToTimestampBytes,
+	Timestamp,
+	timestampBytesToTimestamp,
+	timestampToTimestampBytes,
 } from "./Timestamp.js";
 export type {
-  TimestampBytes,
-  TimestampCounterOverflowError,
-  TimestampDriftError,
-  TimestampError,
-  TimestampTimeOutOfRangeError,
+	TimestampBytes,
+	TimestampCounterOverflowError,
+	TimestampDriftError,
+	TimestampError,
+	TimestampTimeOutOfRangeError,
 } from "./Timestamp.js";

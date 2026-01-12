@@ -10,14 +10,14 @@ import { createRef, Ref } from "./Ref.js";
  * but not modify it directly.
  */
 export interface ReadonlyStore<T> extends Disposable {
-  /**
-   * Registers a listener to be called on state changes and returns a function
-   * to unsubscribe.
-   */
-  readonly subscribe: (listener: Listener) => Unsubscribe;
+	/**
+	 * Registers a listener to be called on state changes and returns a function
+	 * to unsubscribe.
+	 */
+	readonly subscribe: (listener: Listener) => Unsubscribe;
 
-  /** Returns the current state of the store. */
-  readonly get: () => T;
+	/** Returns the current state of the store. */
+	readonly get: () => T;
 }
 
 /**
@@ -39,28 +39,28 @@ export interface Store<T> extends ReadonlyStore<T>, Ref<T> {}
  * can provide a custom equality function as the second argument.
  */
 export const createStore = <T>(
-  initialState: T,
-  eq: Eq<T> = eqStrict,
+	initialState: T,
+	eq: Eq<T> = eqStrict,
 ): Store<T> => {
-  const listeners = createListeners();
-  const ref = createRef(initialState, eq);
+	const listeners = createListeners();
+	const ref = createRef(initialState, eq);
 
-  return {
-    subscribe: listeners.subscribe,
-    get: ref.get,
+	return {
+		subscribe: listeners.subscribe,
+		get: ref.get,
 
-    set: (state) => {
-      const updated = ref.set(state);
-      if (updated) listeners.notify();
-      return updated;
-    },
+		set: (state) => {
+			const updated = ref.set(state);
+			if (updated) listeners.notify();
+			return updated;
+		},
 
-    modify: (updater) => {
-      const updated = ref.modify(updater);
-      if (updated) listeners.notify();
-      return updated;
-    },
+		modify: (updater) => {
+			const updated = ref.modify(updater);
+			if (updated) listeners.notify();
+			return updated;
+		},
 
-    [Symbol.dispose]: listeners[Symbol.dispose],
-  };
+		[Symbol.dispose]: listeners[Symbol.dispose],
+	};
 };

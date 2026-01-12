@@ -31,17 +31,17 @@ import type { Store } from "./Store.js";
  * ```
  */
 export interface Ref<T> {
-  /** Returns the current state. */
-  readonly get: () => T;
+	/** Returns the current state. */
+	readonly get: () => T;
 
-  /** Sets the state. Returns `true` if the state was updated. */
-  readonly set: (state: T) => boolean;
+	/** Sets the state. Returns `true` if the state was updated. */
+	readonly set: (state: T) => boolean;
 
-  /**
-   * Modifies the state using an updater function. Returns `true` if the state
-   * was updated.
-   */
-  readonly modify: (updater: (current: T) => T) => boolean;
+	/**
+	 * Modifies the state using an updater function. Returns `true` if the state
+	 * was updated.
+	 */
+	readonly modify: (updater: (current: T) => T) => boolean;
 }
 
 /**
@@ -52,19 +52,19 @@ export interface Ref<T> {
  * current state.
  */
 export const createRef = <T>(initialState: T, eq?: Eq<T>): Ref<T> => {
-  let currentState = initialState;
+	let currentState = initialState;
 
-  const updateState = (newState: T): boolean => {
-    if (eq?.(newState, currentState)) return false;
-    currentState = newState;
-    return true;
-  };
+	const updateState = (newState: T): boolean => {
+		if (eq?.(newState, currentState)) return false;
+		currentState = newState;
+		return true;
+	};
 
-  return {
-    get: () => currentState,
+	return {
+		get: () => currentState,
 
-    set: (state) => updateState(state),
+		set: (state) => updateState(state),
 
-    modify: (updater) => updateState(updater(currentState)),
-  };
+		modify: (updater) => updateState(updater(currentState)),
+	};
 };

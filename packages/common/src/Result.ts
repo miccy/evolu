@@ -218,8 +218,8 @@ export type Result<T, E = never> = Ok<T> | Err<E>;
 
 /** A successful {@link Result}. */
 export interface Ok<out T> {
-  readonly ok: true;
-  readonly value: T;
+	readonly ok: true;
+	readonly value: T;
 }
 
 /**
@@ -244,8 +244,8 @@ export interface Ok<out T> {
  * ```
  */
 export interface Err<out E> {
-  readonly ok: false;
-  readonly error: E;
+	readonly ok: false;
+	readonly error: E;
 }
 
 /**
@@ -254,7 +254,7 @@ export interface Err<out E> {
  * @category Utilities
  */
 export type InferOk<R extends Result<any, any>> =
-  R extends Ok<infer T> ? T : never;
+	R extends Ok<infer T> ? T : never;
 
 /**
  * Extracts the error type from a {@link Result}.
@@ -262,7 +262,7 @@ export type InferOk<R extends Result<any, any>> =
  * @category Utilities
  */
 export type InferErr<R extends Result<any, any>> =
-  R extends Err<infer E> ? E : never;
+	R extends Err<infer E> ? E : never;
 
 /**
  * Creates an {@link Ok} result.
@@ -285,7 +285,7 @@ export function ok(): Result<void>;
 /** Creates an {@link Ok} result with a specified value. */
 export function ok<T>(value: T): Result<T>;
 export function ok<T>(value?: T): Result<T> {
-  return { ok: true, value: value as T };
+	return { ok: true, value: value as T };
 }
 
 /** Creates an {@link Err} result. */
@@ -296,7 +296,7 @@ export const isOk = <T, E>(result: Result<T, E>): result is Ok<T> => result.ok;
 
 /** Type guard for {@link Err} results. */
 export const isErr = <T, E>(result: Result<T, E>): result is Err<E> =>
-  !result.ok;
+	!result.ok;
 
 /**
  * Extracts the value from a {@link Result} if it is an `Ok`, or throws an error
@@ -320,11 +320,11 @@ export const isErr = <T, E>(result: Result<T, E>): result is Err<E> =>
  * Throws: `Error` with the original error attached as `cause`.
  */
 export const getOrThrow = <T, E>(result: Result<T, E>): T => {
-  if (result.ok) {
-    return result.value;
-  } else {
-    throw new Error("getOrThrow", { cause: result.error });
-  }
+	if (result.ok) {
+		return result.value;
+	} else {
+		throw new Error("getOrThrow", { cause: result.error });
+	}
 };
 
 /**
@@ -345,7 +345,7 @@ export const getOrThrow = <T, E>(result: Result<T, E>): T => {
  * ```
  */
 export const getOrNull = <T, E>(result: Result<T, E>): T | null =>
-  result.ok ? result.value : null;
+	result.ok ? result.value : null;
 
 /**
  * Wraps a synchronous function that may throw, returning a {@link Result}.
@@ -361,14 +361,14 @@ export const getOrNull = <T, E>(result: Result<T, E>): T | null =>
  * ```
  */
 export const trySync = <T, E>(
-  fn: () => T,
-  mapError: (error: unknown) => E,
+	fn: () => T,
+	mapError: (error: unknown) => E,
 ): Result<T, E> => {
-  try {
-    return ok(fn());
-  } catch (error) {
-    return err(mapError(error));
-  }
+	try {
+		return ok(fn());
+	} catch (error) {
+		return err(mapError(error));
+	}
 };
 
 /**
@@ -389,13 +389,13 @@ export const trySync = <T, E>(
  * ```
  */
 export const tryAsync = <T, E>(
-  lazyPromise: Lazy<Promise<T>>,
-  mapError: (error: unknown) => E,
+	lazyPromise: Lazy<Promise<T>>,
+	mapError: (error: unknown) => E,
 ): Promise<Result<T, E>> =>
-  Promise.try(lazyPromise).then(
-    (value) => ok(value),
-    (error: unknown) => err(mapError(error)),
-  );
+	Promise.try(lazyPromise).then(
+		(value) => ok(value),
+		(error: unknown) => err(mapError(error)),
+	);
 
 /**
  * A result for a pull-based protocol with three outcomes.
@@ -421,7 +421,7 @@ export type NextResult<A, E = never, D = void> = Result<A, E | Done<D>>;
  * completion.
  */
 export interface Done<out D = unknown> extends Typed<"Done"> {
-  readonly done: D;
+	readonly done: D;
 }
 
 /**
@@ -433,10 +433,10 @@ export interface Done<out D = unknown> extends Typed<"Done"> {
 export function done(): Done<void>;
 export function done<D>(value: D): Done<D>;
 export function done<D>(value?: D): Done<D> {
-  return {
-    type: "Done",
-    done: value as D,
-  };
+	return {
+		type: "Done",
+		done: value as D,
+	};
 }
 
 /**
@@ -465,8 +465,8 @@ export type OnlyDone<E> = Extract<E, Done<any>>;
  * @category Utilities
  */
 export type InferDone<R extends Result<any, any>> =
-  InferErr<R> extends infer Errors
-    ? Errors extends Done<infer D>
-      ? D
-      : never
-    : never;
+	InferErr<R> extends infer Errors
+		? Errors extends Done<infer D>
+			? D
+			: never
+		: never;

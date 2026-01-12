@@ -82,7 +82,7 @@ export type NonEmptyReadonlySet<T> = ReadonlySet<T> & Brand<"NonEmpty">;
  * @category Type Guards
  */
 export const isNonEmptySet = <T>(
-  set: ReadonlySet<T>,
+	set: ReadonlySet<T>,
 ): set is NonEmptyReadonlySet<T> => set.size > 0;
 
 /**
@@ -101,12 +101,12 @@ export const isNonEmptySet = <T>(
  * @category Transformations
  */
 export const addToSet = <T>(
-  set: ReadonlySet<T>,
-  item: T,
+	set: ReadonlySet<T>,
+	item: T,
 ): NonEmptyReadonlySet<T> => {
-  const next = new Set(set);
-  next.add(item);
-  return next as ReadonlySet<T> as NonEmptyReadonlySet<T>;
+	const next = new Set(set);
+	next.add(item);
+	return next as ReadonlySet<T> as NonEmptyReadonlySet<T>;
 };
 
 /**
@@ -125,12 +125,12 @@ export const addToSet = <T>(
  * @category Transformations
  */
 export const deleteFromSet = <T>(
-  set: ReadonlySet<T>,
-  item: T,
+	set: ReadonlySet<T>,
+	item: T,
 ): ReadonlySet<T> => {
-  const next = new Set(set);
-  next.delete(item);
-  return next as ReadonlySet<T>;
+	const next = new Set(set);
+	next.delete(item);
+	return next as ReadonlySet<T>;
 };
 
 /**
@@ -151,22 +151,22 @@ export const deleteFromSet = <T>(
  * @category Transformations
  */
 export function mapSet<T, U>(
-  set: NonEmptyReadonlySet<T>,
-  mapper: (item: T) => U,
+	set: NonEmptyReadonlySet<T>,
+	mapper: (item: T) => U,
 ): NonEmptyReadonlySet<U>;
 export function mapSet<T, U>(
-  set: ReadonlySet<T>,
-  mapper: (item: T) => U,
+	set: ReadonlySet<T>,
+	mapper: (item: T) => U,
 ): ReadonlySet<U>;
 export function mapSet<T, U>(
-  set: ReadonlySet<T>,
-  mapper: (item: T) => U,
+	set: ReadonlySet<T>,
+	mapper: (item: T) => U,
 ): ReadonlySet<U> {
-  const next = new Set<U>();
-  for (const item of set) {
-    next.add(mapper(item));
-  }
-  return next as ReadonlySet<U>;
+	const next = new Set<U>();
+	for (const item of set) {
+		next.add(mapper(item));
+	}
+	return next as ReadonlySet<U>;
 }
 
 /**
@@ -185,25 +185,25 @@ export function mapSet<T, U>(
  * @category Transformations
  */
 export function filterSet<T, S extends T>(
-  set: ReadonlySet<T>,
-  refinement: RefinementWithIndex<T, S>,
+	set: ReadonlySet<T>,
+	refinement: RefinementWithIndex<T, S>,
 ): ReadonlySet<S>;
 export function filterSet<T>(
-  set: ReadonlySet<T>,
-  predicate: PredicateWithIndex<T>,
+	set: ReadonlySet<T>,
+	predicate: PredicateWithIndex<T>,
 ): ReadonlySet<T>;
 export function filterSet<T>(
-  set: ReadonlySet<T>,
-  predicate: PredicateWithIndex<T>,
+	set: ReadonlySet<T>,
+	predicate: PredicateWithIndex<T>,
 ): ReadonlySet<T> {
-  const next = new Set<T>();
-  let index = 0;
-  for (const item of set) {
-    if (predicate(item, index++)) {
-      next.add(item);
-    }
-  }
-  return next as ReadonlySet<T>;
+	const next = new Set<T>();
+	let index = 0;
+	for (const item of set) {
+		if (predicate(item, index++)) {
+			next.add(item);
+		}
+	}
+	return next as ReadonlySet<T>;
 }
 
 /**
@@ -218,4 +218,4 @@ export function filterSet<T>(
  * @category Accessors
  */
 export const firstInSet = <T>(set: NonEmptyReadonlySet<T>): T =>
-  set.values().next().value as T;
+	set.values().next().value as T;

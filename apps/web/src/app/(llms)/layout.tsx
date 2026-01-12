@@ -1,11 +1,11 @@
 export default function LLMsLayout({
-  children,
+	children,
 }: {
-  children: React.ReactNode;
+	children: React.ReactNode;
 }): React.ReactNode {
-  return (
-    <pre style={{ whiteSpace: "pre-wrap", wordWrap: "break-word" }}>
-      {children}
-    </pre>
-  );
+	return (
+		<pre style={{ whiteSpace: "pre-wrap", wordWrap: "break-word" }}>
+			{children}
+		</pre>
+	);
 }

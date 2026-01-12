@@ -4,13 +4,13 @@
  */
 
 import type {
-  AppOwner,
-  Evolu,
-  EvoluSchema,
-  InferRow,
-  Query,
-  QueryRows,
-  Row,
+	AppOwner,
+	Evolu,
+	EvoluSchema,
+	InferRow,
+	Query,
+	QueryRows,
+	Row,
 } from "@evolu/common/local-first";
 import { createEvoluDeps } from "@evolu/web";
 
@@ -47,70 +47,70 @@ export const evoluSvelteDeps = createEvoluDeps();
  * ```
  */
 export function queryState<
-  R extends Row,
-  Schema extends EvoluSchema,
-  MappedRow = InferRow<Query<R>>,
+	R extends Row,
+	Schema extends EvoluSchema,
+	MappedRow = InferRow<Query<R>>,
 >(
-  evolu: Evolu<Schema>,
-  /**
-   * Can be a normal query or a derived query.
-   *
-   * Svelte reactivity: it needs to be a callback, if the query is $derived this
-   * will re-trigger the load/subscription based on the new query.
-   */
-  observedQuery: () => Query<R> | undefined,
-  options?: {
-    /**
-     * This is a little helper so that you can map the results instead of using
-     * a $derive operation.
-     *
-     * @param row
-     */
-    mapping?: (row: R) => MappedRow;
-  },
+	evolu: Evolu<Schema>,
+	/**
+	 * Can be a normal query or a derived query.
+	 *
+	 * Svelte reactivity: it needs to be a callback, if the query is $derived this
+	 * will re-trigger the load/subscription based on the new query.
+	 */
+	observedQuery: () => Query<R> | undefined,
+	options?: {
+		/**
+		 * This is a little helper so that you can map the results instead of using
+		 * a $derive operation.
+		 *
+		 * @param row
+		 */
+		mapping?: (row: R) => MappedRow;
+	},
 ): { readonly rows: Array<MappedRow> } {
-  {
-    // writing to this variable - svelte's compiler will track it
-    let writableState: Array<MappedRow> = $state([]);
+	{
+		// writing to this variable - svelte's compiler will track it
+		let writableState: Array<MappedRow> = $state([]);
 
-    function updateState(rows: QueryRows<R>): void {
-      if (options?.mapping) {
-        // re-assigning because somehow typescript thinks its still nullable here
-        // remove again once no issue anymore
-        const mapper = options.mapping;
-        writableState = rows.map((row) => mapper(row));
-      }
+		function updateState(rows: QueryRows<R>): void {
+			if (options?.mapping) {
+				// re-assigning because somehow typescript thinks its still nullable here
+				// remove again once no issue anymore
+				const mapper = options.mapping;
+				writableState = rows.map((row) => mapper(row));
+			}
 
-      writableState = rows as Array<MappedRow>;
-    }
+			writableState = rows as Array<MappedRow>;
+		}
 
-    $effect(() => {
-      const query = observedQuery();
+		$effect(() => {
+			const query = observedQuery();
 
-      if (!query) {
-        return;
-      }
+			if (!query) {
+				return;
+			}
 
-      // always setting the state on first load
-      // for a) if the query changes we definitely need current content immediately
-      // for b) if you sub/unsub in a very short time can cause the subscription not to trigger a callback
-      // => this is also for HMR
-      void evolu.loadQuery(query).then(updateState);
+			// always setting the state on first load
+			// for a) if the query changes we definitely need current content immediately
+			// for b) if you sub/unsub in a very short time can cause the subscription not to trigger a callback
+			// => this is also for HMR
+			void evolu.loadQuery(query).then(updateState);
 
-      return evolu.subscribeQuery(query)(() => {
-        const rows = evolu.getQueryRows(query);
+			return evolu.subscribeQuery(query)(() => {
+				const rows = evolu.getQueryRows(query);
 
-        updateState(rows);
-      });
-    });
+				updateState(rows);
+			});
+		});
 
-    return {
-      // Svelte reactivity: it needs to be a getter
-      get rows() {
-        return writableState;
-      },
-    };
-  }
+		return {
+			// Svelte reactivity: it needs to be a getter
+			get rows() {
+				return writableState;
+			},
+		};
+	}
 }
 
 /**
@@ -128,25 +128,25 @@ export function queryState<
  * ```
  */
 export function appOwnerState<Schema extends EvoluSchema>(
-  evolu: Evolu<Schema>,
+	evolu: Evolu<Schema>,
 ): {
-  readonly current: AppOwner | undefined;
+	readonly current: AppOwner | undefined;
 } {
-  {
-    // writing to this variable - svelte's compiler will track it
-    let writableState = $state<AppOwner | undefined>(undefined);
+	{
+		// writing to this variable - svelte's compiler will track it
+		let writableState = $state<AppOwner | undefined>(undefined);
 
-    $effect(() => {
-      void evolu.appOwner.then((appOwner) => {
-        writableState = appOwner;
-      });
-    });
+		$effect(() => {
+			void evolu.appOwner.then((appOwner) => {
+				writableState = appOwner;
+			});
+		});
 
-    return {
-      // Svelte reactivity: it needs to be a getter
-      get current() {
-        return writableState;
-      },
-    };
-  }
+		return {
+			// Svelte reactivity: it needs to be a getter
+			get current() {
+				return writableState;
+			},
+		};
+	}
 }

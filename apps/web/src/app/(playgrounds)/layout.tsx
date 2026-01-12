@@ -2,9 +2,9 @@ import "@/styles/tailwind.css";
 // import "@tailwindcss/forms";
 
 export default function PlaygroundLayout({
-  children,
+	children,
 }: {
-  children: React.ReactNode;
+	children: React.ReactNode;
 }): React.ReactNode {
-  return children;
+	return children;
 }

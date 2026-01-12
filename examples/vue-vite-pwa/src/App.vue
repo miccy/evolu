@@ -1,21 +1,21 @@
 <script setup lang="ts">
 import {
-  NonEmptyString,
-  NonEmptyString1000,
-  SimpleName,
-  SqliteBoolean,
-  sqliteTrue,
-  createEvolu,
-  createFormatTypeError,
-  id,
-  kysely,
-  maxLength,
-  nullOr,
-  type EvoluSchema,
-  type InferType,
-  type MinLengthError,
-  type ValidMutationSizeError,
-  union,
+	NonEmptyString,
+	NonEmptyString1000,
+	SimpleName,
+	SqliteBoolean,
+	sqliteTrue,
+	createEvolu,
+	createFormatTypeError,
+	id,
+	kysely,
+	maxLength,
+	nullOr,
+	type EvoluSchema,
+	type InferType,
+	type MinLengthError,
+	type ValidMutationSizeError,
+	union,
 } from "@evolu/common";
 import { evoluWebDeps } from "@evolu/web";
 import { provideEvolu, useQuery } from "@evolu/vue";
@@ -33,52 +33,52 @@ const TodoPriority = union("low", "high");
 type TodoPriority = typeof TodoPriority.Type;
 
 const PriorityList = TodoPriority.members.map(
-  (member: (typeof TodoPriority.members)[number]) => member.expected,
+	(member: (typeof TodoPriority.members)[number]) => member.expected,
 ) as readonly TodoPriority[];
 
 const DatabaseSchema = {
-  todo: {
-    id: TodoId,
-    title: NonEmptyString1000,
-    isCompleted: nullOr(SqliteBoolean),
-    categoryId: nullOr(TodoCategoryId),
-    priority: TodoPriority,
-  },
-  todoCategory: {
-    id: TodoCategoryId,
-    name: NonEmptyString50,
-  },
+	todo: {
+		id: TodoId,
+		title: NonEmptyString1000,
+		isCompleted: nullOr(SqliteBoolean),
+		categoryId: nullOr(TodoCategoryId),
+		priority: TodoPriority,
+	},
+	todoCategory: {
+		id: TodoCategoryId,
+		name: NonEmptyString50,
+	},
 } satisfies EvoluSchema;
 
 type DatabaseSchema = typeof DatabaseSchema;
 
 const evolu = createEvolu(evoluWebDeps)(DatabaseSchema, {
-  name: SimpleName.orThrow("minimal-example"),
-  // ...(!!import.meta.env.DEV && {
-  //   transports: [{ type: "WebSocket", url: "ws://localhost:4000" }],
-  // }),
+	name: SimpleName.orThrow("minimal-example"),
+	// ...(!!import.meta.env.DEV && {
+	//   transports: [{ type: "WebSocket", url: "ws://localhost:4000" }],
+	// }),
 });
 
 provideEvolu(evolu);
 
 const todosWithCategories = evolu.createQuery((db) =>
-  db
-    .selectFrom("todo")
-    .select(["id", "title", "isCompleted", "categoryId", "priority"])
-    .where("isDeleted", "is not", 1)
-    .where("title", "is not", null)
-    .$narrowType<{ title: kysely.NotNull }>()
-    .orderBy("createdAt"),
+	db
+		.selectFrom("todo")
+		.select(["id", "title", "isCompleted", "categoryId", "priority"])
+		.where("isDeleted", "is not", 1)
+		.where("title", "is not", null)
+		.$narrowType<{ title: kysely.NotNull }>()
+		.orderBy("createdAt"),
 );
 
 const todoCategories = evolu.createQuery((db) =>
-  db
-    .selectFrom("todoCategory")
-    .select(["id", "name"])
-    .where("isDeleted", "is not", 1)
-    .where("name", "is not", null)
-    .$narrowType<{ name: kysely.NotNull }>()
-    .orderBy("createdAt"),
+	db
+		.selectFrom("todoCategory")
+		.select(["id", "name"])
+		.where("isDeleted", "is not", 1)
+		.where("name", "is not", null)
+		.$narrowType<{ name: kysely.NotNull }>()
+		.orderBy("createdAt"),
 );
 
 const allTodos = useQuery(todosWithCategories);
@@ -87,88 +87,88 @@ const allCategories = useQuery(todoCategories);
 const { insert, update } = evolu;
 
 const createNewTodo = () => {
-  customPrompt(NonEmptyString1000, "New Todo", (title) => {
-    insert("todo", { title, priority: "low" });
-  });
+	customPrompt(NonEmptyString1000, "New Todo", (title) => {
+		insert("todo", { title, priority: "low" });
+	});
 };
 
 const createNewCategory = () => {
-  customPrompt(NonEmptyString50, "New Category", (name) => {
-    insert("todoCategory", { name });
-  });
+	customPrompt(NonEmptyString50, "New Category", (name) => {
+		insert("todoCategory", { name });
+	});
 };
 
 const handleUpdateCategory = (id: TodoId, categoryId: TodoCategoryIdType) => {
-  update("todo", { id, categoryId });
+	update("todo", { id, categoryId });
 };
 
 const handleUpdatePriority = (id: TodoId, priority: TodoPriority) => {
-  update("todo", { id, priority });
+	update("todo", { id, priority });
 };
 
 const handleToggleCompletedClick = (id: TodoId, isCompleted: boolean) => {
-  update("todo", { id, isCompleted: Number(!isCompleted) as 0 | 1 });
+	update("todo", { id, isCompleted: Number(!isCompleted) as 0 | 1 });
 };
 
 const handleRenameTodoClick = (id: TodoId) => {
-  customPrompt(NonEmptyString1000, "New Name", (title) => {
-    update("todo", { id, title });
-  });
+	customPrompt(NonEmptyString1000, "New Name", (title) => {
+		update("todo", { id, title });
+	});
 };
 
 const handleRenameCategoryClick = (id: TodoCategoryIdType) => {
-  customPrompt(NonEmptyString50, "New Name", (name) => {
-    update("todoCategory", { id, name });
-  });
+	customPrompt(NonEmptyString50, "New Name", (name) => {
+		update("todoCategory", { id, name });
+	});
 };
 
 const handleDeleteTodoClick = (id: TodoId) => {
-  update("todo", { id, isDeleted: sqliteTrue });
+	update("todo", { id, isDeleted: sqliteTrue });
 };
 
 const handleDeleteCategoryClick = (id: TodoCategoryIdType) => {
-  update("todoCategory", { id, isDeleted: sqliteTrue });
+	update("todoCategory", { id, isDeleted: sqliteTrue });
 };
 
 const customPrompt = <
-  Type extends typeof NonEmptyString1000 | typeof NonEmptyString50,
+	Type extends typeof NonEmptyString1000 | typeof NonEmptyString50,
 >(
-  type: Type,
-  message: string,
-  onSuccess: (value: InferType<Type>) => void,
+	type: Type,
+	message: string,
+	onSuccess: (value: InferType<Type>) => void,
 ): void => {
-  const value = window.prompt(message);
-  if (value == null) return;
+	const value = window.prompt(message);
+	if (value == null) return;
 
-  const result = type.from(value);
-  if (!result.ok) {
-    alert(formatTypeError(result.error));
-    return;
-  }
-  onSuccess(result.value as never);
+	const result = type.from(value);
+	if (!result.ok) {
+		alert(formatTypeError(result.error));
+		return;
+	}
+	onSuccess(result.value as never);
 };
 
 const formatTypeError = createFormatTypeError<
-  ValidMutationSizeError | MinLengthError
+	ValidMutationSizeError | MinLengthError
 >((error): string => {
-  switch (error.type) {
-    case "ValidMutationSize":
-      return "This is a developer error, it should not happen 🤨";
-    case "MinLength":
-      return `Minimal length is: ${error.min}`;
-  }
+	switch (error.type) {
+		case "ValidMutationSize":
+			return "This is a developer error, it should not happen 🤨";
+		case "MinLength":
+			return `Minimal length is: ${error.min}`;
+	}
 });
 
 function onCategoryChange(event: Event, id: TodoId) {
-  if (!(event.target instanceof HTMLSelectElement)) return;
+	if (!(event.target instanceof HTMLSelectElement)) return;
 
-  handleUpdateCategory(id, event.target.value as unknown as TodoCategoryIdType);
+	handleUpdateCategory(id, event.target.value as unknown as TodoCategoryIdType);
 }
 
 function onPriorityChange(event: Event, id: TodoId) {
-  if (!(event.target instanceof HTMLSelectElement)) return;
+	if (!(event.target instanceof HTMLSelectElement)) return;
 
-  handleUpdatePriority(id, event.target.value as unknown as TodoPriority);
+	handleUpdatePriority(id, event.target.value as unknown as TodoPriority);
 }
 </script>
 

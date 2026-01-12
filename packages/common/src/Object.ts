@@ -137,17 +137,17 @@ export const getProperty = <K extends string, V>(
  * occurs, preventing memory leaks from unreleased blob URLs.
  */
 export interface ObjectURL extends Disposable {
-  /** The object URL string created by `URL.createObjectURL`. */
-  readonly url: string;
+	/** The object URL string created by `URL.createObjectURL`. */
+	readonly url: string;
 }
 
 /** Creates a disposable {@link ObjectURL} for the given blob. */
 export const createObjectURL = (blob: Blob): ObjectURL => {
-  const url = URL.createObjectURL(blob);
-  return {
-    url,
-    [Symbol.dispose]: () => {
-      URL.revokeObjectURL(url);
-    },
-  };
+	const url = URL.createObjectURL(blob);
+	return {
+		url,
+		[Symbol.dispose]: () => {
+			URL.revokeObjectURL(url);
+		},
+	};
 };

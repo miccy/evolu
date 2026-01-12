@@ -5,9 +5,9 @@
 
 html,
 body {
-  margin: 0;
-  padding: 0;
-  background-color: #f4f4f5;
+	margin: 0;
+	padding: 0;
+	background-color: #f4f4f5;
 }
 
 /*
@@ -19,11 +19,11 @@ body {
   color utility to any element that depends on these defaults.
 */
 @layer base {
-  *,
-  ::after,
-  ::before,
-  ::backdrop,
-  ::file-selector-button {
-    border-color: var(--color-gray-200, currentColor);
-  }
+	*,
+	::after,
+	::before,
+	::backdrop,
+	::file-selector-button {
+		border-color: var(--color-gray-200, currentColor);
+	}
 }

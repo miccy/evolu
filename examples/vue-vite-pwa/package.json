@@ -1,32 +1,32 @@
 {
-  "name": "@example/vue-vite-pwa",
-  "version": "0.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "build": "vue-tsc -b && vite build",
-    "clean": "rimraf node_modules dist .vite .turbo dev-dist",
-    "dev": "vite",
-    "generate-pwa-assets": "pwa-assets-generator",
-    "preview": "vite preview",
-    "lint": "biome check .",
-    "format": "biome check . --write"
-  },
-  "dependencies": {
-    "@evolu/common": "latest",
-    "@evolu/vue": "latest",
-    "@evolu/web": "latest",
-    "vue": "^3.5.25",
-    "workbox-window": "^7.4.0"
-  },
-  "devDependencies": {
-    "@evolu/biome-config": "workspace:*",
-    "@vite-pwa/assets-generator": "^1.0.0",
-    "@vitejs/plugin-vue": "^6.0.3",
-    "@vue/tsconfig": "^0.8.1",
-    "typescript": "^5.9.3",
-    "vite": "^7.2.7",
-    "vite-plugin-pwa": "^1.0.2",
-    "vue-tsc": "^3.2.1"
-  }
+	"name": "@example/vue-vite-pwa",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "vue-tsc -b && vite build",
+		"clean": "rimraf node_modules dist .vite .turbo dev-dist",
+		"dev": "vite",
+		"generate-pwa-assets": "pwa-assets-generator",
+		"preview": "vite preview",
+		"lint": "biome check .",
+		"format": "biome check . --write"
+	},
+	"dependencies": {
+		"@evolu/common": "latest",
+		"@evolu/vue": "latest",
+		"@evolu/web": "latest",
+		"vue": "^3.5.25",
+		"workbox-window": "^7.4.0"
+	},
+	"devDependencies": {
+		"@evolu/biome-config": "workspace:*",
+		"@vite-pwa/assets-generator": "^1.0.0",
+		"@vitejs/plugin-vue": "^6.0.3",
+		"@vue/tsconfig": "^0.8.1",
+		"typescript": "^5.9.3",
+		"vite": "^7.2.7",
+		"vite-plugin-pwa": "^1.0.2",
+		"vue-tsc": "^3.2.1"
+	}
 }

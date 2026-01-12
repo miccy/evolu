@@ -13,16 +13,16 @@ import { createSharedEvoluDeps, createSharedLocalAuth } from "../shared.js";
 import { createOpSqliteDriver } from "../sqlite-drivers/createOpSqliteDriver.js";
 
 const reloadApp: ReloadApp = () => {
-  if (process.env.NODE_ENV === "development") {
-    DevSettings.reload();
-  } else {
-    // TODO: reload not implemented for bare rn
-  }
+	if (process.env.NODE_ENV === "development") {
+		DevSettings.reload();
+	} else {
+		// TODO: reload not implemented for bare rn
+	}
 };
 
 export const evoluReactNativeDeps = createSharedEvoluDeps({
-  createSqliteDriver: createOpSqliteDriver,
-  reloadApp,
+	createSqliteDriver: createOpSqliteDriver,
+	reloadApp,
 });
 
 export const localAuth = createSharedLocalAuth(SensitiveInfo);

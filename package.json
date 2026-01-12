@@ -1,91 +1,91 @@
 {
-  "private": true,
-  "name": "@evolu/monorepo",
-  "scripts": {
-    "dev": "turbo --filter @evolu/* dev --filter web --concurrency=11",
-    "build": "turbo --filter @evolu/* build",
-    "build:web": "pnpm build:docs && turbo --filter web build",
-    "build:docs": "typedoc && pnpm --filter=web run fix:docs",
-    "test": "turbo run test",
-    "test:coverage": "turbo run test:coverage",
-    "test:watch": "turbo run test:watch",
-    "start": "turbo start",
-    "lint": "turbo lint && pnpm lint:root",
-    "lint:root": "biome check *.json *.yaml scripts",
-    "format": "turbo format && pnpm format:root",
-    "format:root": "biome check *.json *.yaml scripts --write",
-    "lint-monorepo": "pnpm dlx sherif@latest",
-    "verify": "pnpm build && pnpm test && pnpm lint && pnpm lint-monorepo && pnpm typedoc",
-    "clean": "turbo clean && rimraf node_modules pnpm-lock.yaml .turbo .eslintcache out",
-    "version": "changeset version",
-    "release": "pnpm run build && changeset publish",
-    "ios": "cd examples/react-expo && pnpm ios",
-    "android": "cd examples/react-expo && pnpm android",
-    "bench": "turbo bench",
-    "examples:toggle-deps": "bun ./scripts/toggle-examples-deps.mts",
-    "examples:build": "turbo --filter @example/* build",
-    "examples:react-nextjs:dev": "turbo --filter @example/react-nextjs dev",
-    "examples:react-vite-pwa:dev": "turbo --filter @example/react-vite-pwa dev",
-    "examples:svelte-vite-pwa:dev": "turbo --filter @example/svelte-vite-pwa dev",
-    "examples:vue-vite-pwa:dev": "turbo --filter @example/vue-vite-pwa dev",
-    "publish:local": "bun ./scripts/publish-local.mts"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "2.3.11",
-    "@changesets/cli": "^2.29.8",
-    "@types/inquirer": "^9.0.9",
-    "rimraf": "^6.1.2",
-    "turbo": "^2.6.3",
-    "typedoc": "^0.28.15",
-    "typedoc-plugin-markdown": "^4.9.0",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.16"
-  },
-  "engines": {
-    "node": ">=24.0.0"
-  },
-  "packageManager": "pnpm@10.28.0",
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@parcel/watcher",
-      "@tailwindcss/oxide",
-      "better-sqlite3",
-      "electron",
-      "electron-winstaller",
-      "esbuild",
-      "lmdb",
-      "msgpackr-extract",
-      "react-native-nitro-modules",
-      "sharp",
-      "unrs-resolver"
-    ],
-    "peerDependencyRules": {
-      "ignoreMissing": [
-        "@babel/*",
-        "expo-modules-*",
-        "typescript"
-      ]
-    }
-  },
-  "patchedDependencies": {
-    "@changesets/assemble-release-plan": "patches/@changesets__assemble-release-plan.patch"
-  },
-  "workspaces": {
-    "packages": [
-      "apps/*",
-      "packages/*",
-      "examples/*"
-    ],
-    "catalogs": {
-      "react19": {
-        "@types/react": "~19.2.7",
-        "@types/react-dom": "~19.2.3",
-        "react": "19.2.3",
-        "react-dom": "19.2.3"
-      }
-    }
-  },
-  "dependencies": {
-    "@evolu/biome-config": "workspace:*"
-  }
+	"private": true,
+	"name": "@evolu/monorepo",
+	"scripts": {
+		"dev": "turbo --filter @evolu/* dev --filter web --concurrency=11",
+		"build": "turbo --filter @evolu/* build",
+		"build:web": "pnpm build:docs && turbo --filter web build",
+		"build:docs": "typedoc && pnpm --filter=web run fix:docs",
+		"test": "turbo run test",
+		"test:coverage": "turbo run test:coverage",
+		"test:watch": "turbo run test:watch",
+		"start": "turbo start",
+		"lint": "turbo lint && pnpm lint:root",
+		"lint:root": "biome check *.json *.yaml scripts",
+		"format": "turbo format && pnpm format:root",
+		"format:root": "biome check *.json *.yaml scripts --write",
+		"lint-monorepo": "pnpm dlx sherif@latest",
+		"verify": "pnpm build && pnpm test && pnpm lint && pnpm lint-monorepo && pnpm typedoc",
+		"clean": "turbo clean && rimraf node_modules pnpm-lock.yaml .turbo .eslintcache out",
+		"version": "changeset version",
+		"release": "pnpm run build && changeset publish",
+		"ios": "cd examples/react-expo && pnpm ios",
+		"android": "cd examples/react-expo && pnpm android",
+		"bench": "turbo bench",
+		"examples:toggle-deps": "bun ./scripts/toggle-examples-deps.mts",
+		"examples:build": "turbo --filter @example/* build",
+		"examples:react-nextjs:dev": "turbo --filter @example/react-nextjs dev",
+		"examples:react-vite-pwa:dev": "turbo --filter @example/react-vite-pwa dev",
+		"examples:svelte-vite-pwa:dev": "turbo --filter @example/svelte-vite-pwa dev",
+		"examples:vue-vite-pwa:dev": "turbo --filter @example/vue-vite-pwa dev",
+		"publish:local": "bun ./scripts/publish-local.mts"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.3.11",
+		"@changesets/cli": "^2.29.8",
+		"@types/inquirer": "^9.0.9",
+		"rimraf": "^6.1.2",
+		"turbo": "^2.6.3",
+		"typedoc": "^0.28.15",
+		"typedoc-plugin-markdown": "^4.9.0",
+		"typescript": "^5.9.3",
+		"vitest": "^4.0.16"
+	},
+	"engines": {
+		"node": ">=24.0.0"
+	},
+	"packageManager": "pnpm@10.28.0",
+	"pnpm": {
+		"onlyBuiltDependencies": [
+			"@parcel/watcher",
+			"@tailwindcss/oxide",
+			"better-sqlite3",
+			"electron",
+			"electron-winstaller",
+			"esbuild",
+			"lmdb",
+			"msgpackr-extract",
+			"react-native-nitro-modules",
+			"sharp",
+			"unrs-resolver"
+		],
+		"peerDependencyRules": {
+			"ignoreMissing": [
+				"@babel/*",
+				"expo-modules-*",
+				"typescript"
+			]
+		}
+	},
+	"patchedDependencies": {
+		"@changesets/assemble-release-plan": "patches/@changesets__assemble-release-plan.patch"
+	},
+	"workspaces": {
+		"packages": [
+			"apps/*",
+			"packages/*",
+			"examples/*"
+		],
+		"catalogs": {
+			"react19": {
+				"@types/react": "~19.2.7",
+				"@types/react-dom": "~19.2.3",
+				"react": "19.2.3",
+				"react-dom": "19.2.3"
+			}
+		}
+	},
+	"dependencies": {
+		"@evolu/biome-config": "workspace:*"
+	}
 }

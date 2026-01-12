@@ -25,30 +25,30 @@ export type Unsubscribe = () => void;
  * ```
  */
 export interface Listeners<T = void> extends Disposable {
-  /** Registers a listener and returns an unsubscribe function. */
-  readonly subscribe: (listener: Listener<T>) => Unsubscribe;
+	/** Registers a listener and returns an unsubscribe function. */
+	readonly subscribe: (listener: Listener<T>) => Unsubscribe;
 
-  /** Notifies all registered listeners. */
-  readonly notify: (value: T) => void;
+	/** Notifies all registered listeners. */
+	readonly notify: (value: T) => void;
 }
 
 /** Creates a {@link Listeners} instance for managing subscriptions. */
 export const createListeners = <T = void>(): Listeners<T> => {
-  let listeners: Set<Listener<T>> | null = null;
+	let listeners: Set<Listener<T>> | null = null;
 
-  return {
-    subscribe: (listener) => {
-      listeners ??= new Set();
-      listeners.add(listener);
-      return () => listeners?.delete(listener);
-    },
+	return {
+		subscribe: (listener) => {
+			listeners ??= new Set();
+			listeners.add(listener);
+			return () => listeners?.delete(listener);
+		},
 
-    notify: (value) => {
-      if (listeners) for (const listener of listeners) listener(value);
-    },
+		notify: (value) => {
+			if (listeners) for (const listener of listeners) listener(value);
+		},
 
-    [Symbol.dispose]: () => {
-      listeners?.clear();
-    },
-  };
+		[Symbol.dispose]: () => {
+			listeners?.clear();
+		},
+	};
 };

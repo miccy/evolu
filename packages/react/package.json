@@ -1,60 +1,60 @@
 {
-  "name": "@evolu/react",
-  "version": "10.4.0",
-  "description": "Evolu for React",
-  "keywords": [
-    "evolu",
-    "react",
-    "react-hooks"
-  ],
-  "author": "Daniel Steigerwald <daniel@steigerwald.cz>",
-  "license": "MIT",
-  "repository": "evoluhq/evolu",
-  "bugs": {
-    "url": "https://github.com/evoluhq/evolu/issues"
-  },
-  "homepage": "https://evolu.dev",
-  "type": "module",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "browser": "./dist/index.js",
-      "react-native": "./dist/index.js"
-    }
-  },
-  "files": [
-    "dist/**",
-    "src/**",
-    "README.md"
-  ],
-  "scripts": {
-    "dev": "tsc --watch",
-    "build": "rimraf dist && tsc",
-    "clean": "rimraf .turbo node_modules dist",
-    "format": "biome check . --write",
-    "lint": "biome check ."
-  },
-  "devDependencies": {
-    "@evolu/biome-config": "workspace:*",
-    "@evolu/common": "workspace:*",
-    "@evolu/tsconfig": "workspace:*",
-    "@types/react": "^19.1.17",
-    "@types/react-dom": "^19.1.11",
-    "react": "^19.1.0",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.16"
-  },
-  "peerDependencies": {
-    "@evolu/common": "^7.4.1",
-    "react": ">=19"
-  },
-  "publishConfig": {
-    "access": "public"
-  },
-  "engines": {
-    "node": ">=24.0.0"
-  },
-  "sideEffects": []
+	"name": "@evolu/react",
+	"version": "10.4.0",
+	"description": "Evolu for React",
+	"keywords": [
+		"evolu",
+		"react",
+		"react-hooks"
+	],
+	"author": "Daniel Steigerwald <daniel@steigerwald.cz>",
+	"license": "MIT",
+	"repository": "evoluhq/evolu",
+	"bugs": {
+		"url": "https://github.com/evoluhq/evolu/issues"
+	},
+	"homepage": "https://evolu.dev",
+	"type": "module",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js",
+			"browser": "./dist/index.js",
+			"react-native": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist/**",
+		"src/**",
+		"README.md"
+	],
+	"scripts": {
+		"dev": "tsc --watch",
+		"build": "rimraf dist && tsc",
+		"clean": "rimraf .turbo node_modules dist",
+		"format": "biome check . --write",
+		"lint": "biome check ."
+	},
+	"devDependencies": {
+		"@evolu/biome-config": "workspace:*",
+		"@evolu/common": "workspace:*",
+		"@evolu/tsconfig": "workspace:*",
+		"@types/react": "^19.1.17",
+		"@types/react-dom": "^19.1.11",
+		"react": "^19.1.0",
+		"typescript": "^5.9.3",
+		"vitest": "^4.0.16"
+	},
+	"peerDependencies": {
+		"@evolu/common": "^7.4.1",
+		"react": ">=19"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"engines": {
+		"node": ">=24.0.0"
+	},
+	"sideEffects": []
 }

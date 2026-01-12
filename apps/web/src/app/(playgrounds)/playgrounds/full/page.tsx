@@ -11,14 +11,14 @@ import dynamic from "next/dynamic";
  * tests).
  */
 const EvoluFullExample = dynamic(
-  () => import("./EvoluFullExample").then((mod) => mod.EvoluFullExample),
-  { ssr: false },
+	() => import("./EvoluFullExample").then((mod) => mod.EvoluFullExample),
+	{ ssr: false },
 );
 
 export default function Page(): React.ReactElement {
-  return (
-    <div className="flex h-full flex-col items-center justify-center gap-4 bg-zinc-100">
-      <EvoluFullExample />
-    </div>
-  );
+	return (
+		<div className="flex h-full flex-col items-center justify-center gap-4 bg-zinc-100">
+			<EvoluFullExample />
+		</div>
+	);
 }

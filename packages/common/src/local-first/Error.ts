@@ -6,8 +6,8 @@ import { TimestampError } from "./Timestamp.js";
 
 /** Represents errors that can occur in Evolu. */
 export type EvoluError =
-  | DecryptWithXChaCha20Poly1305Error
-  | ProtocolError
-  | SqliteError
-  | TimestampError
-  | UnknownError;
+	| DecryptWithXChaCha20Poly1305Error
+	| ProtocolError
+	| SqliteError
+	| TimestampError
+	| UnknownError;
