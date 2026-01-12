@@ -86,6 +86,10 @@ export const identity = <A>(a: A): A => a;
  *
  * const lookup = readonly(new Map([["key", "value"]]));
  * // Type: ReadonlyMap<string, string>
+ *
+ * // ES2025 iterator chains: use .toArray() then readonly
+ * const doubled = readonly([1, 2, 3].values().map((x) => x * 2).toArray());
+ * // Type: ReadonlyArray<number>
  * ```
  *
  * @experimental
@@ -108,25 +112,37 @@ export function readonly<T, K extends keyof any, V>(
 }
 
 /**
- * A function that delays computation and returns a value of type T.
+ * A function that takes no arguments and returns a value of type T. Also known
+ * as a thunk.
  *
  * Useful for:
  *
- * - Lazy evaluation
- * - Returning constant values
- * - Providing default or placeholder behaviors
+ * - Delaying expensive operations until actually needed
+ * - Deferring side effects so the callee controls when they run
+ * - Providing default callbacks (see `constVoid`, `constTrue`, etc.)
  *
  * ### Example
  *
  * ```ts
- * const getRandomNumber: LazyValue<number> = () => Math.random();
- * const randomValue = getRandomNumber();
+ * // Delay expensive computation
+ * const expensiveData: Lazy<Data> = () => computeExpensiveData();
+ * const data = expensiveData(); // Runs only when called
+ *
+ * // Defer side effects — callee can set up error handling before creation
+ * const createWorker = (create: Lazy<SharedWorker>, onError: OnError) => {
+ *   // Setup happens first
+ *   const worker = create(); // Then the effect runs
+ *   worker.onerror = onError;
+ *   return worker;
+ * };
+ * createWorker(() => new SharedWorker(url), handleError);
  * ```
  */
-export type LazyValue<T> = () => T;
+export type Lazy<T> = () => T;
 
-export const constVoid: LazyValue<void> = () => undefined;
-export const constUndefined: LazyValue<undefined> = () => undefined;
-export const constNull: LazyValue<null> = () => null;
-export const constTrue: LazyValue<true> = () => true;
-export const constFalse: LazyValue<false> = () => false;
+// TODO: Rename to lazyVoid etc.
+export const constVoid: Lazy<void> = () => undefined;
+export const constUndefined: Lazy<undefined> = () => undefined;
+export const constNull: Lazy<null> = () => null;
+export const constTrue: Lazy<true> = () => true;
+export const constFalse: Lazy<false> = () => false;

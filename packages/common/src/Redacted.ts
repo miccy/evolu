@@ -44,8 +44,8 @@ import type { Eq } from "./Eq.js";
  *   // use value...
  * };
  *
- * fetchUser(redactedKey); // ✅
- * // fetchUser(createRedacted("x" as DbPassword)); // ❌ type error
+ * fetchUser(redactedKey); // ok
+ * // fetchUser(createRedacted("x" as DbPassword)); // type error
  *
  * // Automatic cleanup with `using`
  * {

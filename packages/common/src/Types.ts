@@ -4,7 +4,7 @@
  * @module
  */
 
-import type * as Kysely from "kysely";
+import * as Kysely from "kysely";
 
 /**
  * Checks a condition on a value and returns a boolean.
@@ -80,8 +80,8 @@ export type Refinement<in A, out B extends A> = (a: A) => a is B;
  * ```
  */
 export type RefinementWithIndex<in A, out B extends A> = (
-	a: A,
-	index: number,
+  a: A,
+  index: number,
 ) => a is B;
 
 /**
@@ -107,11 +107,11 @@ export type RefinementWithIndex<in A, out B extends A> = (
  * ```
  */
 export type NullablePartial<
-	T,
-	NK extends keyof T = {
-		[K in keyof T]: null extends T[K] ? K : never;
-	}[keyof T],
-	NP = Pick<T, Exclude<keyof T, NK>> & Partial<Pick<T, NK>>,
+  T,
+  NK extends keyof T = {
+    [K in keyof T]: null extends T[K] ? K : never;
+  }[keyof T],
+  NP = Pick<T, Exclude<keyof T, NK>> & Partial<Pick<T, NK>>,
 > = { [K in keyof NP]: NP[K] };
 
 /**
@@ -138,14 +138,24 @@ export type Literal = string | number | bigint | boolean | undefined | null;
  * - True -> boolean
  */
 export type WidenLiteral<T extends Literal> = T extends string
-	? string
-	: T extends number
-		? number
-		: T extends boolean
-			? boolean
-			: T extends bigint
-				? bigint
-				: T;
+  ? string
+  : T extends number
+    ? number
+    : T extends boolean
+      ? boolean
+      : T extends bigint
+        ? bigint
+        : T;
+
+/**
+ * Removes `readonly` modifier from all properties of a type.
+ *
+ * Useful for constructing immutable objects step-by-step (e.g. builder pattern)
+ * before casting them back to the readonly type.
+ */
+export type Mutable<T> = {
+  -readonly [P in keyof T]: T[P];
+};
 
 /**
  * Simplify an intersection type into a single mapped type.
@@ -172,4 +182,82 @@ export type Simplify<T> = Kysely.Simplify<T>;
  * unchanged.
  */
 export type PartialProp<T, K extends keyof T> = Omit<T, K> &
-	Partial<Pick<T, K>>;
+  Partial<Pick<T, K>>;
+
+/**
+ * A value that can be awaited.
+ *
+ * Use when a function may complete synchronously or asynchronously depending on
+ * runtime conditions (e.g., cache hit vs network fetch).
+ *
+ * ### Example
+ *
+ * ```ts
+ * const getData = (id: string): Awaitable<Data> => {
+ *   const cached = cache.get(id);
+ *   if (cached) return cached; // Sync path
+ *   return fetchData(id); // Async path
+ * };
+ *
+ * // Always works
+ * const data = await getData(id);
+ *
+ * // Or optimize for sync path
+ * const result = getData(id);
+ * const data = isPromiseLike(result) ? await result : result;
+ * ```
+ */
+export type Awaitable<T> = T | PromiseLike<T>;
+
+/**
+ * Type guard to check if a value is a {@link PromiseLike}.
+ *
+ * Use with {@link Awaitable} to conditionally `await` only when necessary,
+ * avoiding microtask overhead for synchronous values.
+ */
+export const isPromiseLike = <T>(
+  value: Awaitable<T>,
+): value is PromiseLike<T> =>
+  typeof (value as PromiseLike<T> | null | undefined)?.then === "function";
+
+/** Single digit 0-9. Useful for template literal type validation. */
+export type Digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+
+/** Digit 1-9. Useful for template literal type validation. */
+export type Digit1To9 = Exclude<Digit, "0">;
+
+/** Numeric string 1-6. Useful for days validation. */
+export type Digit1To6 = "1" | "2" | "3" | "4" | "5" | "6";
+
+/** Numeric string 1-23. Useful for hours validation. */
+export type Digit1To23 =
+  | Digit1To9 // 1-9
+  | `1${Digit}` // 10-19
+  | `2${"0" | "1" | "2" | "3"}`; // 20-23
+
+/** Numeric string 1-51. Useful for weeks validation. */
+export type Digit1To51 =
+  | Digit1To9 // 1-9
+  | `${"1" | "2" | "3" | "4"}${Digit}` // 10-49
+  | `5${"0" | "1"}`; // 50-51
+
+/** Numeric string 1-99. Useful for years validation. */
+export type Digit1To99 =
+  | Digit1To9 // 1-9
+  | `${Digit1To9}${Digit}`; // 10-99
+
+/** Numeric string 1-59. Useful for minutes, seconds validation. */
+export type Digit1To59 =
+  | Digit1To9 // 1-9
+  | `1${Digit}` // 10-19
+  | `2${Digit}` // 20-29
+  | `3${Digit}` // 30-39
+  | `4${Digit}` // 40-49
+  | `5${Digit}`; // 50-59
+
+/** Converts a union to an intersection. */
+export type UnionToIntersection<U> = (
+  U extends unknown ? (k: U) => void : never
+) extends (k: infer I) => void
+  ? I
+  : never;

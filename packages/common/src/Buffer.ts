@@ -28,7 +28,7 @@ export class BufferError extends Error {
  * its capacity) to minimize memory reallocations and uses `subarray` for
  * efficient, copy-free data access in methods like `unwrap` and `shift`.
  *
- * ### Recommended Usage
+ * ## Recommended Usage
  *
  * Create as few Buffers as possible—typically one main Buffer for the final
  * output. Temporary Buffers are allowed when necessary (e.g., for

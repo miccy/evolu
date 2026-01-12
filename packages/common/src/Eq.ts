@@ -57,6 +57,22 @@ export const createEqArrayLike =
 	};
 
 /**
+ * Compares two array-like structures by strict reference equality (`===`).
+ *
+ * Useful for structural sharing checks where elements are compared by identity.
+ *
+ * ### Example
+ *
+ * ```ts
+ * const a = { x: 1 };
+ * const b = { x: 1 };
+ * eqArrayStrict([a, a], [a, a]); // true (same references)
+ * eqArrayStrict([a], [b]); // false (different references, even if equal values)
+ * ```
+ */
+export const eqArrayStrict = createEqArrayLike(eqStrict);
+
+/**
  * Compares two array-like structures of numbers for equality.
  *
  * ### Example
