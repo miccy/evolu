@@ -13,12 +13,12 @@ import path from "node:path";
 import { describe, it } from "node:test";
 import url from "node:url";
 import {
-	addSyntheticH1,
-	createSearch,
-	extractMetadataTitle,
-	getOriginalName,
-	splitIntoWords,
-} from "./searchUtils.js";
+    addSyntheticH1,
+    createSearch,
+    extractMetadataTitle,
+    getOriginalName,
+    splitIntoWords,
+} from "./searchUtils.mjs";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const apiRefDir = path.join(__dirname, "../app/(docs)/docs/api-reference");

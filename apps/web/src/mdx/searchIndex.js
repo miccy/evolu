@@ -2,10 +2,10 @@
 // The DATA placeholder gets replaced with actual search data at build time
 
 import {
-	createSearch,
-	getOriginalName,
-	splitIntoWords,
-} from "./searchUtils.js";
+    createSearch,
+    getOriginalName,
+    splitIntoWords,
+} from "./searchUtils.mjs";
 
 const data = "DATA_PLACEHOLDER";
 
