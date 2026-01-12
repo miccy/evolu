@@ -27,8 +27,8 @@
 		"lint": "biome check ."
 	},
 	"dependencies": {
-		"better-sqlite3": "^12.5.0",
-		"ws": "^8.18.3"
+		"better-sqlite3": "^12.6.0",
+		"ws": "^8.19.0"
 	},
 	"devDependencies": {
 		"@evolu/biome-config": "workspace:*",
