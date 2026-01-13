@@ -1,6 +1,6 @@
 import { isNonEmptyArray, shiftFromArray } from "./Array.js";
-import { err, ok, Result } from "./Result.js";
-import { Duration, durationToMillis, Millis } from "./Time.js";
+import { Result, err, ok } from "./Result.js";
+import { Duration, Millis, durationToMillis } from "./Time.js";
 import { PositiveInt } from "./Type.js";
 
 /**
@@ -412,7 +412,11 @@ export const timeout = <T, E>(
 		return result as Result<T, E | TimeoutError>;
 	});
 
-/** Options for configuring {@link retry} behavior. */
+/**
+ * Options for configuring {@link retry} behavior.
+ *
+ * @public
+ */
 export interface RetryOptions<E> {
 	/** Number of retry attempts after the initial failure. */
 	readonly retries: PositiveInt;
@@ -443,7 +447,11 @@ export interface RetryOptions<E> {
 	readonly onRetry?: (error: E, attempt: number, delay: number) => void;
 }
 
-/** Error returned when {@link retry} exhausts all retry attempts. */
+/**
+ * Error returned when {@link retry} exhausts all retry attempts.
+ *
+ * @public
+ */
 export interface RetryError<E> {
 	readonly type: "RetryError";
 	readonly cause: E;

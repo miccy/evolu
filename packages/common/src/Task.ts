@@ -7,7 +7,7 @@ import { decrement, increment } from "./Number.js";
 import { createRandom, Random, RandomDep } from "./Random.js";
 import { Ref } from "./Ref.js";
 import { Done, err, NextResult, ok, Result, tryAsync } from "./Result.js";
-import { Schedule } from "./schedule/index.js";
+import { Schedule } from "./schedule/Public.js";
 import { addToSet, deleteFromSet, emptySet } from "./Set.js";
 import {
 	createTime,
@@ -1093,12 +1093,17 @@ const createRunnerInternal =
 				task = () => Promise.resolve(err(abortReason));
 			}
 
-			const promise = Promise.try(task, runner)
+			// Promise.try is not standard, use async wrapper
+			// eslint-disable-next-line @typescript-eslint/no-base-to-string
+			const promise = (async () => task(runner))()
 				.then((taskOutcome) => {
 					const childResult = runner.signal.aborted
 						? err(runner.signal.reason)
 						: taskOutcome;
-					runner.setResultAndOutcome(childResult, taskOutcome);
+					runner.setResultAndOutcome(
+						childResult,
+						taskOutcome as Result<unknown, unknown>,
+					);
 					return childResult;
 				})
 				.finally(runner[Symbol.asyncDispose])
@@ -1133,7 +1138,7 @@ const createRunnerInternal =
 
 			run.signal = signalController.signal;
 			run.abortMask = abortMask;
-			run.onAbort = (fn) => {
+			run.onAbort = (fn: (reason: unknown) => void) => {
 				signalController.signal.addEventListener(
 					"abort",
 					() => {
@@ -1171,8 +1176,8 @@ const createRunnerInternal =
 			};
 			run.onEvent = undefined;
 
-			run.daemon = (task) => (daemon ?? self)(task);
-			run.defer = (task) => ({
+			run.daemon = <T, E>(task: Task<T, E>) => (daemon ?? self)(task);
+			run.defer = (task: Task<void>) => ({
 				[Symbol.asyncDispose]: () =>
 					run.daemon(unabortable(task)).then(constVoid),
 			});
@@ -1202,7 +1207,10 @@ const createRunnerInternal =
 			// Internal properties (hidden from public Runner type)
 			run.requestAbort = requestAbort;
 			run.requestSignal = requestController.signal;
-			run.setResultAndOutcome = (fiberResult, taskOutcome) => {
+			run.setResultAndOutcome = (
+				fiberResult: Result<unknown, unknown>,
+				taskOutcome: Result<unknown, unknown>,
+			) => {
 				result = fiberResult;
 				outcome = taskOutcome;
 				emitEvent({

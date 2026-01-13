@@ -56,6 +56,13 @@ import { Predicate } from "../Types.js";
  *
  * @experimental
  */
+/**
+ * A schedule that defines the delay and whether to continue.
+ *
+ * @see {@link retry}
+ * @see {@link repeat}
+ * @public
+ */
 export type Schedule<out Output, in Input = unknown> = (
 	deps: ScheduleDeps,
 ) => (input: Input) => NextResult<readonly [Output, Millis]>;

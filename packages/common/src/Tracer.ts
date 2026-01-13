@@ -35,6 +35,11 @@ export interface Tracer {
 	readonly event: (name: string, data?: unknown) => void;
 }
 
+/**
+ * Dependency for {@link Tracer}.
+ *
+ * @public
+ */
 export interface TracerDep {
 	readonly tracer: Tracer;
 }
@@ -45,6 +50,11 @@ export interface TracerConfig {
 	readonly tracing?: Ref<boolean>;
 }
 
+/**
+ * Dependency for {@link TracerConfig}.
+ *
+ * @public
+ */
 export interface TracerConfigDep {
 	readonly tracerConfig: TracerConfig;
 }

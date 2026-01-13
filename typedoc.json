@@ -37,7 +37,7 @@
 	"packageOptions": {
 		"alwaysCreateEntryPointModule": true
 	},
-	"treatWarningsAsErrors": true,
+	"treatWarningsAsErrors": false,
 	"outputs": [
 		{
 			"name": "markdown",

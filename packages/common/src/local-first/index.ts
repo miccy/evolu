@@ -16,3 +16,6 @@ export * from "./SharedWorker.js";
 export * from "./Storage.js";
 export * from "./Sync.js";
 export * from "./Timestamp.js";
+
+export type { Listener, Unsubscribe } from "../Listeners.js";
+export type { MaybeAsync } from "../OldTask.js";
