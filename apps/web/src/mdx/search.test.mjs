@@ -13,11 +13,11 @@ import path from "node:path";
 import { describe, it } from "node:test";
 import url from "node:url";
 import {
-    addSyntheticH1,
-    createSearch,
-    extractMetadataTitle,
-    getOriginalName,
-    splitIntoWords,
+	addSyntheticH1,
+	createSearch,
+	extractMetadataTitle,
+	getOriginalName,
+	splitIntoWords,
 } from "./searchUtils.mjs";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));

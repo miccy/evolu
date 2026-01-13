@@ -1,3 +1,8 @@
+/**
+ * Structured concurrency with fibers, runners, and cancellation.
+ *
+ * @module
+ */
 import { isNonEmptyArray } from "./Array.js";
 import { assert } from "./Assert.js";
 import { createRandomBytes, RandomBytesDep } from "./Crypto.js";
@@ -402,7 +407,7 @@ export interface Runner extends AsyncDisposable {
 	readonly getChildren: () => ReadonlySet<Fiber>;
 
 	/**
-	 * Creates a memoized {@link RunnerSnapshot} of this runner.
+	 * Creates a memoized {@link FiberSnapshot} of this runner.
 	 *
 	 * Use for monitoring, debugging, or building UI that visualizes task trees.
 	 *
@@ -410,7 +415,7 @@ export interface Runner extends AsyncDisposable {
 	 *
 	 * ```ts
 	 * // React integration with useSyncExternalStore
-	 * const useRunnerSnapshot = (runner: Runner) =>
+	 * const useFiberSnapshot = (runner: Runner) =>
 	 *   useSyncExternalStore(
 	 *     (callback) => {
 	 *       runner.onEvent = callback;
@@ -422,7 +427,7 @@ export interface Runner extends AsyncDisposable {
 	 *   );
 	 * ```
 	 */
-	readonly snapshot: () => RunnerSnapshot;
+	readonly snapshot: () => FiberSnapshot;
 
 	/**
 	 * Callback for monitoring runner events.
@@ -702,7 +707,7 @@ export type InferFiberErr<F extends Fiber<any, any>> =
  * @category Core
  * @see {@link Runner.snapshot}
  */
-export interface RunnerSnapshot {
+export interface FiberSnapshot {
 	/** The {@link Runner.id} of the {@link Fiber} this snapshot represents. */
 	readonly id: Id;
 
@@ -713,7 +718,7 @@ export interface RunnerSnapshot {
 	 * The fiber's completion value.
 	 *
 	 * `null` while pending. If abort was requested, this is {@link AbortError}
-	 * even if the task completed successfully — see {@link RunnerSnapshot.outcome}
+	 * even if the task completed successfully — see {@link FiberSnapshot.outcome}
 	 * for what the task actually returned.
 	 */
 	readonly result: Result<unknown, unknown> | null;
@@ -721,16 +726,13 @@ export interface RunnerSnapshot {
 	/**
 	 * What the task actually returned.
 	 *
-	 * `null` while pending. Unlike {@link RunnerSnapshot.result}, not overridden
+	 * `null` while pending. Unlike {@link FiberSnapshot.result}, not overridden
 	 * by abort.
 	 */
 	readonly outcome: Result<unknown, unknown> | null;
 
 	/** Child snapshots in spawn (start) order. */
-	readonly children: ReadonlyArray<RunnerSnapshot>;
-
-	/** The abort mask depth. `0` means abortable, `>= 1` means unabortable. */
-	readonly abortMask: AbortMask;
+	readonly children: ReadonlyArray<FiberSnapshot>;
 }
 
 /**
@@ -1130,7 +1132,7 @@ const createRunnerInternal =
 
 			let result: Result<unknown, unknown> | null = null;
 			let outcome: Result<unknown, unknown> | null = null;
-			let snapshot: RunnerSnapshot | null = null;
+			let snapshot: FiberSnapshot | null = null;
 			let disposing: Promise<void> | null = null;
 
 			run.id = id;

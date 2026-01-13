@@ -4,43 +4,43 @@ import { exhaustiveCheck } from "../src/Function.js";
 import { createRef } from "../src/Ref.js";
 import { Done, Result, err, ok, tryAsync } from "../src/Result.js";
 import {
-    AbortError,
-    AsyncDisposableStack,
-    Fiber,
-    InferFiberErr,
-    InferFiberOk,
-    InferTaskDone,
-    InferTaskErr,
-    InferTaskOk,
-    NextTask,
-    RaceLostError,
-    Runner,
-    RunnerConfigDep,
-    RunnerEvent,
-    RunnerState,
-    Task,
-    TimeoutError,
-    createMutex,
-    createRunner,
-    createSemaphore,
-    race,
-    repeat,
-    retry,
-    runnerClosingError,
-    sleep,
-    timeout,
-    unabortable,
-    unabortableMask,
-    yieldNow,
+	AbortError,
+	AsyncDisposableStack,
+	Fiber,
+	InferFiberErr,
+	InferFiberOk,
+	InferTaskDone,
+	InferTaskErr,
+	InferTaskOk,
+	NextTask,
+	RaceLostError,
+	Runner,
+	RunnerConfigDep,
+	RunnerEvent,
+	RunnerState,
+	Task,
+	TimeoutError,
+	createMutex,
+	createRunner,
+	createSemaphore,
+	race,
+	repeat,
+	retry,
+	runnerClosingError,
+	sleep,
+	timeout,
+	unabortable,
+	unabortableMask,
+	yieldNow,
 } from "../src/Task.js";
 import { createTestTime, msLongTask } from "../src/Time.js";
 import { Id, Typed } from "../src/Type.js";
 import {
-    exponential,
-    fixed,
-    spaced,
-    take,
-    whileInput,
+	exponential,
+	fixed,
+	spaced,
+	take,
+	whileInput,
 } from "../src/schedule/index.js";
 import { testCreateRunner } from "./_browser-deps.js";
 
@@ -100,8 +100,8 @@ describe("NextTask", () => {
 	test("type narrows correctly in pattern matching", async () => {
 		await using run = testCreateRunner();
 
-    const task: NextTask<number, MyError, string> = () =>
-      err({ type: "Done", done: "summary" });
+		const task: NextTask<number, MyError, string> = () =>
+			err({ type: "Done", done: "summary" });
 
 		const result = await run(task);
 
@@ -132,10 +132,10 @@ describe("NextTask", () => {
 		const items = [1, 2, 3];
 		let index = 0;
 
-    const next: NextTask<number> = () => {
-      if (index >= items.length) return err({ type: "Done", done: undefined });
-      return ok(items[index++]);
-    };
+		const next: NextTask<number> = () => {
+			if (index >= items.length) return err({ type: "Done", done: undefined });
+			return ok(items[index++]);
+		};
 
 		const collected: Array<number> = [];
 
@@ -158,7 +158,7 @@ describe("Runner", () => {
 		test("executes task and returns result", async () => {
 			await using run = createRunner();
 
-      const task: Task<string> = () => ok("hello");
+			const task: Task<string> = () => ok("hello");
 
 			const result = await run(task);
 
@@ -218,10 +218,10 @@ describe("Runner", () => {
 
 			let childTime: typeof run.time | null = null;
 
-      await run((childRun) => {
-        childTime = childRun.time;
-        return ok();
-      });
+			await run((childRun) => {
+				childTime = childRun.time;
+				return ok();
+			});
 
 			expect(childTime).toBe(run.time);
 		});
@@ -453,507 +453,507 @@ describe("Runner", () => {
 		test("runs task when disposed", async () => {
 			await using run = testCreateRunner();
 
-      const events: Array<string> = [];
-
-      const cleanup: Task<void> = () => {
-        events.push("cleanup");
-        return ok();
-      };
-
-      const task: Task<string> = async (run) => {
-        await using _ = run.defer(cleanup);
-
-        events.push("work");
-        return ok("done");
-      };
-
-      const result = await run(task);
-
-      expect(result).toEqual(ok("done"));
-      expect(events).toEqual(["work", "cleanup"]);
-    });
-
-    test("is unabortable", async () => {
-      await using run = testCreateRunner();
-
-      const events: Array<string> = [];
-      const taskStarted = Promise.withResolvers<void>();
-      const canComplete = Promise.withResolvers<void>();
-
-      const cleanup: Task<void> = () => {
-        events.push("cleanup");
-        return ok();
-      };
-
-      const task: Task<string, AbortError> = async (run) => {
-        await using _ = run.defer(cleanup);
-        events.push("work started");
-        taskStarted.resolve();
-        await canComplete.promise;
-        if (run.signal.aborted) {
-          return err(run.signal.reason);
-        }
-        return ok("done");
-      };
-
-      const fiber = run(task);
-      await taskStarted.promise;
-      fiber.abort("stop");
-      canComplete.resolve();
-
-      const result = await fiber;
-
-      expect(result).toEqual(err({ type: "AbortError", reason: "stop" }));
-      expect(events).toEqual(["work started", "cleanup"]);
-    });
-  });
-
-  describe("dispose", () => {
-    test("aborts all running fibers", async () => {
-      const results: Array<string> = [];
-
-      {
-        await using run = testCreateRunner();
-
-        const makeTask =
-          (id: string): Task<string> =>
-          async ({ signal }) => {
-            const taskComplete =
-              Promise.withResolvers<Result<string, AbortError>>();
-
-            const timeout = setTimeout(() => {
-              results.push(`${id} completed`);
-              taskComplete.resolve(ok(id));
-            }, 1000);
-
-            signal.addEventListener(
-              "abort",
-              () => {
-                clearTimeout(timeout);
-                results.push(`${id} aborted`);
-                taskComplete.resolve(err(signal.reason));
-              },
-              { once: true },
-            );
-
-            return await taskComplete.promise;
-          };
-
-        run(makeTask("task1"));
-        run(makeTask("task2"));
-      }
-      // runner disposed here
-
-      expect(results).toEqual(["task1 aborted", "task2 aborted"]);
-    });
-
-    test("transitions active → disposing → disposed", async () => {
-      const run = testCreateRunner();
-
-      expectTypeOf(run.getState()).toEqualTypeOf<RunnerState>();
-      expect(run.getState()).toBe("active");
-
-      const taskStarted = Promise.withResolvers<void>();
-      const taskCanFinish = Promise.withResolvers<void>();
-
-      let stateInAbortHandler: RunnerState | null = null;
-      let stateAfterAwait: RunnerState | null = null;
-
-      const task: Task<void> = async (run) => {
-        run.signal.addEventListener("abort", () => {
-          stateInAbortHandler = run.parent!.getState();
-        });
-        taskStarted.resolve();
-        await taskCanFinish.promise;
-        stateAfterAwait = run.parent!.getState();
-        return ok();
-      };
-
-      run(task);
-      await taskStarted.promise;
-
-      const disposePromise = run[Symbol.asyncDispose]();
-      expect(run.getState()).toBe("disposing");
-
-      taskCanFinish.resolve();
-      await disposePromise;
-
-      expect(stateInAbortHandler).toBe("disposing");
-      expect(stateAfterAwait).toBe("disposing");
-      expect(run.getState()).toBe("disposed");
-    });
-
-    test("is idempotent", async () => {
-      await using run = testCreateRunner();
-
-      const promise1 = run[Symbol.asyncDispose]();
-      const promise2 = run[Symbol.asyncDispose]();
-
-      expect(promise1).toBe(promise2);
-    });
-
-    test("does not run new tasks when disposing", async () => {
-      const run = testCreateRunner();
-      run[Symbol.asyncDispose]();
-
-      expect(run.getState()).toBe("disposing");
-
-      let regularRan = false;
-      let unabortableRan = false;
-      let unabortableMaskRan = false;
-
-      const regularFiber = run(() => {
-        regularRan = true;
-        return ok();
-      });
-      const unabortableFiber = run(
-        unabortable(() => {
-          unabortableRan = true;
-          return ok();
-        }),
-      );
-      const unabortableMaskFiber = run(
-        unabortableMask(() => () => {
-          unabortableMaskRan = true;
-          return ok();
-        }),
-      );
-
-      const regularResult = await regularFiber;
-      const unabortableResult = await unabortableFiber;
-      const unabortableMaskResult = await unabortableMaskFiber;
-
-      expect(regularRan).toBe(false);
-      expect(unabortableRan).toBe(false);
-      expect(unabortableMaskRan).toBe(false);
-
-      expect(regularFiber.run.getState()).toBe("disposed");
-      expect(unabortableFiber.run.getState()).toBe("disposed");
-      expect(unabortableMaskFiber.run.getState()).toBe("disposed");
-
-      const expected = err(runnerClosingError);
-      expect(regularResult).toEqual(expected);
-      expect(unabortableResult).toEqual(expected);
-      expect(unabortableMaskResult).toEqual(expected);
-    });
-
-    test("does not run new tasks when disposed", async () => {
-      const run = testCreateRunner();
-      await run[Symbol.asyncDispose]();
-
-      expect(run.getState()).toBe("disposed");
-
-      let regularRan = false;
-      let unabortableRan = false;
-      let unabortableMaskRan = false;
-
-      const regularFiber = run(() => {
-        regularRan = true;
-        return ok();
-      });
-      const unabortableFiber = run(
-        unabortable(() => {
-          unabortableRan = true;
-          return ok();
-        }),
-      );
-      const unabortableMaskFiber = run(
-        unabortableMask(() => () => {
-          unabortableMaskRan = true;
-          return ok();
-        }),
-      );
-
-      const regularResult = await regularFiber;
-      const unabortableResult = await unabortableFiber;
-      const unabortableMaskResult = await unabortableMaskFiber;
-
-      expect(regularRan).toBe(false);
-      expect(unabortableRan).toBe(false);
-      expect(unabortableMaskRan).toBe(false);
-
-      expect(regularFiber.run.getState()).toBe("disposed");
-      expect(unabortableFiber.run.getState()).toBe("disposed");
-      expect(unabortableMaskFiber.run.getState()).toBe("disposed");
-
-      const expected = err(runnerClosingError);
-      expect(regularResult).toEqual(expected);
-      expect(unabortableResult).toEqual(expected);
-      expect(unabortableMaskResult).toEqual(expected);
-    });
-  });
-
-  describe("onAbort", () => {
-    test("passes the abort reason directly, not wrapped in AbortError", async () => {
-      await using run = testCreateRunner();
-
-      const receivedReason = Promise.withResolvers<unknown>();
-      const taskStarted = Promise.withResolvers<void>();
-
-      const fiber = run(async (childRun) => {
-        childRun.onAbort((reason) => {
-          receivedReason.resolve(reason);
-        });
-
-        taskStarted.resolve();
-
-        await Promise.resolve();
-        return ok();
-      });
-
-      await taskStarted.promise;
-      fiber.abort("my-reason");
-
-      const reason = await receivedReason.promise;
-
-      expect(reason).toBe("my-reason");
-    });
-
-    test("receives undefined when aborted without reason", async () => {
-      await using run = testCreateRunner();
-
-      const receivedReason = Promise.withResolvers<unknown>();
-      const taskStarted = Promise.withResolvers<void>();
-
-      const fiber = run(async (childRun) => {
-        childRun.onAbort((reason) => {
-          receivedReason.resolve(reason);
-        });
-
-        taskStarted.resolve();
-
-        await Promise.resolve();
-        return ok();
-      });
-
-      await taskStarted.promise;
-      fiber.abort();
-
-      const reason = await receivedReason.promise;
-
-      expect(reason).toBeUndefined();
-    });
-  });
+			const events: Array<string> = [];
+
+			const cleanup: Task<void> = () => {
+				events.push("cleanup");
+				return ok();
+			};
+
+			const task: Task<string> = async (run) => {
+				await using _ = run.defer(cleanup);
+
+				events.push("work");
+				return ok("done");
+			};
+
+			const result = await run(task);
+
+			expect(result).toEqual(ok("done"));
+			expect(events).toEqual(["work", "cleanup"]);
+		});
+
+		test("is unabortable", async () => {
+			await using run = testCreateRunner();
+
+			const events: Array<string> = [];
+			const taskStarted = Promise.withResolvers<void>();
+			const canComplete = Promise.withResolvers<void>();
+
+			const cleanup: Task<void> = () => {
+				events.push("cleanup");
+				return ok();
+			};
+
+			const task: Task<string, AbortError> = async (run) => {
+				await using _ = run.defer(cleanup);
+				events.push("work started");
+				taskStarted.resolve();
+				await canComplete.promise;
+				if (run.signal.aborted) {
+					return err(run.signal.reason);
+				}
+				return ok("done");
+			};
+
+			const fiber = run(task);
+			await taskStarted.promise;
+			fiber.abort("stop");
+			canComplete.resolve();
+
+			const result = await fiber;
+
+			expect(result).toEqual(err({ type: "AbortError", reason: "stop" }));
+			expect(events).toEqual(["work started", "cleanup"]);
+		});
+	});
+
+	describe("dispose", () => {
+		test("aborts all running fibers", async () => {
+			const results: Array<string> = [];
+
+			{
+				await using run = testCreateRunner();
+
+				const makeTask =
+					(id: string): Task<string> =>
+					async ({ signal }) => {
+						const taskComplete =
+							Promise.withResolvers<Result<string, AbortError>>();
+
+						const timeout = setTimeout(() => {
+							results.push(`${id} completed`);
+							taskComplete.resolve(ok(id));
+						}, 1000);
+
+						signal.addEventListener(
+							"abort",
+							() => {
+								clearTimeout(timeout);
+								results.push(`${id} aborted`);
+								taskComplete.resolve(err(signal.reason));
+							},
+							{ once: true },
+						);
+
+						return await taskComplete.promise;
+					};
+
+				run(makeTask("task1"));
+				run(makeTask("task2"));
+			}
+			// runner disposed here
+
+			expect(results).toEqual(["task1 aborted", "task2 aborted"]);
+		});
+
+		test("transitions active → disposing → disposed", async () => {
+			const run = testCreateRunner();
+
+			expectTypeOf(run.getState()).toEqualTypeOf<RunnerState>();
+			expect(run.getState()).toBe("active");
+
+			const taskStarted = Promise.withResolvers<void>();
+			const taskCanFinish = Promise.withResolvers<void>();
+
+			let stateInAbortHandler: RunnerState | null = null;
+			let stateAfterAwait: RunnerState | null = null;
+
+			const task: Task<void> = async (run) => {
+				run.signal.addEventListener("abort", () => {
+					stateInAbortHandler = run.parent!.getState();
+				});
+				taskStarted.resolve();
+				await taskCanFinish.promise;
+				stateAfterAwait = run.parent!.getState();
+				return ok();
+			};
+
+			run(task);
+			await taskStarted.promise;
+
+			const disposePromise = run[Symbol.asyncDispose]();
+			expect(run.getState()).toBe("disposing");
+
+			taskCanFinish.resolve();
+			await disposePromise;
+
+			expect(stateInAbortHandler).toBe("disposing");
+			expect(stateAfterAwait).toBe("disposing");
+			expect(run.getState()).toBe("disposed");
+		});
+
+		test("is idempotent", async () => {
+			await using run = testCreateRunner();
+
+			const promise1 = run[Symbol.asyncDispose]();
+			const promise2 = run[Symbol.asyncDispose]();
+
+			expect(promise1).toBe(promise2);
+		});
+
+		test("does not run new tasks when disposing", async () => {
+			const run = testCreateRunner();
+			run[Symbol.asyncDispose]();
+
+			expect(run.getState()).toBe("disposing");
+
+			let regularRan = false;
+			let unabortableRan = false;
+			let unabortableMaskRan = false;
+
+			const regularFiber = run(() => {
+				regularRan = true;
+				return ok();
+			});
+			const unabortableFiber = run(
+				unabortable(() => {
+					unabortableRan = true;
+					return ok();
+				}),
+			);
+			const unabortableMaskFiber = run(
+				unabortableMask(() => () => {
+					unabortableMaskRan = true;
+					return ok();
+				}),
+			);
+
+			const regularResult = await regularFiber;
+			const unabortableResult = await unabortableFiber;
+			const unabortableMaskResult = await unabortableMaskFiber;
+
+			expect(regularRan).toBe(false);
+			expect(unabortableRan).toBe(false);
+			expect(unabortableMaskRan).toBe(false);
+
+			expect(regularFiber.run.getState()).toBe("disposed");
+			expect(unabortableFiber.run.getState()).toBe("disposed");
+			expect(unabortableMaskFiber.run.getState()).toBe("disposed");
+
+			const expected = err(runnerClosingError);
+			expect(regularResult).toEqual(expected);
+			expect(unabortableResult).toEqual(expected);
+			expect(unabortableMaskResult).toEqual(expected);
+		});
+
+		test("does not run new tasks when disposed", async () => {
+			const run = testCreateRunner();
+			await run[Symbol.asyncDispose]();
+
+			expect(run.getState()).toBe("disposed");
+
+			let regularRan = false;
+			let unabortableRan = false;
+			let unabortableMaskRan = false;
+
+			const regularFiber = run(() => {
+				regularRan = true;
+				return ok();
+			});
+			const unabortableFiber = run(
+				unabortable(() => {
+					unabortableRan = true;
+					return ok();
+				}),
+			);
+			const unabortableMaskFiber = run(
+				unabortableMask(() => () => {
+					unabortableMaskRan = true;
+					return ok();
+				}),
+			);
+
+			const regularResult = await regularFiber;
+			const unabortableResult = await unabortableFiber;
+			const unabortableMaskResult = await unabortableMaskFiber;
+
+			expect(regularRan).toBe(false);
+			expect(unabortableRan).toBe(false);
+			expect(unabortableMaskRan).toBe(false);
+
+			expect(regularFiber.run.getState()).toBe("disposed");
+			expect(unabortableFiber.run.getState()).toBe("disposed");
+			expect(unabortableMaskFiber.run.getState()).toBe("disposed");
+
+			const expected = err(runnerClosingError);
+			expect(regularResult).toEqual(expected);
+			expect(unabortableResult).toEqual(expected);
+			expect(unabortableMaskResult).toEqual(expected);
+		});
+	});
+
+	describe("onAbort", () => {
+		test("passes the abort reason directly, not wrapped in AbortError", async () => {
+			await using run = testCreateRunner();
+
+			const receivedReason = Promise.withResolvers<unknown>();
+			const taskStarted = Promise.withResolvers<void>();
+
+			const fiber = run(async (childRun) => {
+				childRun.onAbort((reason) => {
+					receivedReason.resolve(reason);
+				});
+
+				taskStarted.resolve();
+
+				await Promise.resolve();
+				return ok();
+			});
+
+			await taskStarted.promise;
+			fiber.abort("my-reason");
+
+			const reason = await receivedReason.promise;
+
+			expect(reason).toBe("my-reason");
+		});
+
+		test("receives undefined when aborted without reason", async () => {
+			await using run = testCreateRunner();
+
+			const receivedReason = Promise.withResolvers<unknown>();
+			const taskStarted = Promise.withResolvers<void>();
+
+			const fiber = run(async (childRun) => {
+				childRun.onAbort((reason) => {
+					receivedReason.resolve(reason);
+				});
+
+				taskStarted.resolve();
+
+				await Promise.resolve();
+				return ok();
+			});
+
+			await taskStarted.promise;
+			fiber.abort();
+
+			const reason = await receivedReason.promise;
+
+			expect(reason).toBeUndefined();
+		});
+	});
 });
 
 describe("Fiber", () => {
-  test("is awaitable", async () => {
-    await using run = testCreateRunner();
+	test("is awaitable", async () => {
+		await using run = testCreateRunner();
 
-    const task: Task<number> = () => Promise.resolve(ok(42));
-    const fiber = run(task);
+		const task: Task<number> = () => Promise.resolve(ok(42));
+		const fiber = run(task);
 
-    expectTypeOf(fiber).toEqualTypeOf<Fiber<number, never>>();
+		expectTypeOf(fiber).toEqualTypeOf<Fiber<number, never>>();
 
-    const result = await fiber;
+		const result = await fiber;
 
-    expectTypeOf(result).toEqualTypeOf<Result<number, AbortError>>();
-    expect(result).toEqual(ok(42));
-  });
+		expectTypeOf(result).toEqualTypeOf<Result<number, AbortError>>();
+		expect(result).toEqual(ok(42));
+	});
 
-  describe("abort", () => {
-    test("before run short-circuits child task", async () => {
-      await using run = testCreateRunner();
+	describe("abort", () => {
+		test("before run short-circuits child task", async () => {
+			await using run = testCreateRunner();
 
-      let taskRan = false;
-      let signalAbortedBeforeInnerRun = false;
-      let innerFiberState: string | null = null;
-      let innerFiberResult: Result<unknown, unknown> | null = null;
+			let taskRan = false;
+			let signalAbortedBeforeInnerRun = false;
+			let innerFiberState: string | null = null;
+			let innerFiberResult: Result<unknown, unknown> | null = null;
 
-      const fiber = run(async (run) => {
-        await Promise.resolve();
-        signalAbortedBeforeInnerRun = run.signal.aborted;
+			const fiber = run(async (run) => {
+				await Promise.resolve();
+				signalAbortedBeforeInnerRun = run.signal.aborted;
 
-        const innerFiber = run(() => {
-          taskRan = true;
-          return ok("done");
-        });
+				const innerFiber = run(() => {
+					taskRan = true;
+					return ok("done");
+				});
 
-        await innerFiber;
+				await innerFiber;
 
-        innerFiberState = innerFiber.run.getState();
-        innerFiberResult = innerFiber.run.getResult();
+				innerFiberState = innerFiber.run.getState();
+				innerFiberResult = innerFiber.run.getResult();
 
-        return ok("done");
-      });
+				return ok("done");
+			});
 
-      fiber.abort("stop");
-      const result = await fiber;
+			fiber.abort("stop");
+			const result = await fiber;
 
-      expect(signalAbortedBeforeInnerRun).toBe(true);
-      expect(taskRan).toBe(false);
-      expect(innerFiberState).toBe("disposed");
-      expect(innerFiberResult).toEqual(
-        err({ type: "AbortError", reason: "stop" }),
-      );
-      expect(result).toEqual(err({ type: "AbortError", reason: "stop" }));
-    });
+			expect(signalAbortedBeforeInnerRun).toBe(true);
+			expect(taskRan).toBe(false);
+			expect(innerFiberState).toBe("disposed");
+			expect(innerFiberResult).toEqual(
+				err({ type: "AbortError", reason: "stop" }),
+			);
+			expect(result).toEqual(err({ type: "AbortError", reason: "stop" }));
+		});
 
-    test("during run signals abort via AbortSignal", async () => {
-      await using run = testCreateRunner();
+		test("during run signals abort via AbortSignal", async () => {
+			await using run = testCreateRunner();
 
-      let signalAbortedInHandler = false;
+			let signalAbortedInHandler = false;
 
-      const task: Task<string> = async ({ signal }) => {
-        const taskComplete =
-          Promise.withResolvers<Result<string, AbortError>>();
+			const task: Task<string> = async ({ signal }) => {
+				const taskComplete =
+					Promise.withResolvers<Result<string, AbortError>>();
 
-        const timeout = setTimeout(() => {
-          taskComplete.resolve(ok("completed"));
-        }, 1000);
+				const timeout = setTimeout(() => {
+					taskComplete.resolve(ok("completed"));
+				}, 1000);
 
-        signal.addEventListener(
-          "abort",
-          () => {
-            signalAbortedInHandler = signal.aborted;
-            clearTimeout(timeout);
-            taskComplete.resolve(err(signal.reason));
-          },
-          { once: true },
-        );
+				signal.addEventListener(
+					"abort",
+					() => {
+						signalAbortedInHandler = signal.aborted;
+						clearTimeout(timeout);
+						taskComplete.resolve(err(signal.reason));
+					},
+					{ once: true },
+				);
 
-        return await taskComplete.promise;
-      };
+				return await taskComplete.promise;
+			};
 
-      const fiber = run(task);
-      fiber.abort("test abort");
+			const fiber = run(task);
+			fiber.abort("test abort");
 
-      const result = await fiber;
+			const result = await fiber;
 
-      expect(signalAbortedInHandler).toBe(true);
-      expect(result).toEqual(
-        err({
-          type: "AbortError",
-          reason: "test abort",
-        }),
-      );
-    });
+			expect(signalAbortedInHandler).toBe(true);
+			expect(result).toEqual(
+				err({
+					type: "AbortError",
+					reason: "test abort",
+				}),
+			);
+		});
 
-    /**
-     * Native APIs like fetch throw signal.reason when aborted. To properly
-     * propagate the Task's AbortError and distinguish abort from other errors,
-     * wrap the native API with tryAsync and check signal.aborted in the error
-     * handler to return signal.reason (the AbortError) instead of wrapping it
-     * as a domain error.
-     */
-    test("propagates to native APIs", async () => {
-      interface FetchError extends Typed<"FetchError"> {
-        readonly error: unknown;
-      }
+		/**
+		 * Native APIs like fetch throw signal.reason when aborted. To properly
+		 * propagate the Task's AbortError and distinguish abort from other errors,
+		 * wrap the native API with tryAsync and check signal.aborted in the error
+		 * handler to return signal.reason (the AbortError) instead of wrapping it
+		 * as a domain error.
+		 */
+		test("propagates to native APIs", async () => {
+			interface FetchError extends Typed<"FetchError"> {
+				readonly error: unknown;
+			}
 
-      const errorCapture = Promise.withResolvers<unknown>();
+			const errorCapture = Promise.withResolvers<unknown>();
 
-      const fetchTask =
-        (url: string): Task<Response, FetchError> =>
-        ({ signal }) =>
-          tryAsync(
-            () => fetch(url, { signal }),
-            (error): FetchError | AbortError => {
-              errorCapture.resolve(error);
-              if (AbortError.is(error)) return error;
-              return { type: "FetchError", error };
-            },
-          );
+			const fetchTask =
+				(url: string): Task<Response, FetchError> =>
+				({ signal }) =>
+					tryAsync(
+						() => fetch(url, { signal }),
+						(error): FetchError | AbortError => {
+							errorCapture.resolve(error);
+							if (AbortError.is(error)) return error;
+							return { type: "FetchError", error };
+						},
+					);
 
-      await using run = testCreateRunner();
+			await using run = testCreateRunner();
 
-      const fiber = run(fetchTask("https://example.com"));
-      fiber.abort("cancelled");
+			const fiber = run(fetchTask("https://example.com"));
+			fiber.abort("cancelled");
 
-      expect(await fiber).toEqual(
-        err({
-          type: "AbortError",
-          reason: "cancelled",
-        }),
-      );
+			expect(await fiber).toEqual(
+				err({
+					type: "AbortError",
+					reason: "cancelled",
+				}),
+			);
 
-      expect(await errorCapture.promise).toEqual({
-        type: "AbortError",
-        reason: "cancelled",
-      });
-    });
-  });
+			expect(await errorCapture.promise).toEqual({
+				type: "AbortError",
+				reason: "cancelled",
+			});
+		});
+	});
 
-  describe("dispose", () => {
-    test("aborts task via using", async () => {
-      await using run = testCreateRunner();
+	describe("dispose", () => {
+		test("aborts task via using", async () => {
+			await using run = testCreateRunner();
 
-      const task: Task<string> = async ({ signal }) => {
-        const taskComplete =
-          Promise.withResolvers<Result<string, AbortError>>();
+			const task: Task<string> = async ({ signal }) => {
+				const taskComplete =
+					Promise.withResolvers<Result<string, AbortError>>();
 
-        const timeout = setTimeout(() => {
-          taskComplete.resolve(ok("completed"));
-        }, 1000);
+				const timeout = setTimeout(() => {
+					taskComplete.resolve(ok("completed"));
+				}, 1000);
 
-        signal.addEventListener(
-          "abort",
-          () => {
-            clearTimeout(timeout);
-            taskComplete.resolve(err(signal.reason));
-          },
-          { once: true },
-        );
+				signal.addEventListener(
+					"abort",
+					() => {
+						clearTimeout(timeout);
+						taskComplete.resolve(err(signal.reason));
+					},
+					{ once: true },
+				);
 
-        return await taskComplete.promise;
-      };
+				return await taskComplete.promise;
+			};
 
-      let fiber: Fiber<string>;
-      {
-        using f = run(task);
-        fiber = f;
-      }
+			let fiber: Fiber<string>;
+			{
+				using f = run(task);
+				fiber = f;
+			}
 
-      expect(await fiber).toEqual(
-        err({
-          type: "AbortError",
-          reason: undefined,
-        }),
-      );
-    });
-  });
+			expect(await fiber).toEqual(
+				err({
+					type: "AbortError",
+					reason: undefined,
+				}),
+			);
+		});
+	});
 
-  test("getResult returns null while pending, Result after completion", async () => {
-    await using run = testCreateRunner();
+	test("getResult returns null while pending, Result after completion", async () => {
+		await using run = testCreateRunner();
 
-    const taskComplete = Promise.withResolvers<Result<number, MyError>>();
+		const taskComplete = Promise.withResolvers<Result<number, MyError>>();
 
-    const fiber = run(() => taskComplete.promise);
+		const fiber = run(() => taskComplete.promise);
 
-    expect(fiber.getResult()).toBeNull();
+		expect(fiber.getResult()).toBeNull();
 
-    taskComplete.resolve(ok(42));
-    await fiber;
+		taskComplete.resolve(ok(42));
+		await fiber;
 
-    expectTypeOf(fiber.getResult()).toEqualTypeOf<Result<
-      number,
-      MyError | AbortError
-    > | null>();
-    expect(fiber.getResult()).toEqual(ok(42));
-  });
+		expectTypeOf(fiber.getResult()).toEqualTypeOf<Result<
+			number,
+			MyError | AbortError
+		> | null>();
+		expect(fiber.getResult()).toEqual(ok(42));
+	});
 
-  test("getOutcome equals getResult when not aborted", async () => {
-    await using run = testCreateRunner();
+	test("getOutcome equals getResult when not aborted", async () => {
+		await using run = testCreateRunner();
 
-    const taskComplete = Promise.withResolvers<Result<number, MyError>>();
+		const taskComplete = Promise.withResolvers<Result<number, MyError>>();
 
-    const fiber = run(() => taskComplete.promise);
+		const fiber = run(() => taskComplete.promise);
 
-    expect(fiber.getOutcome()).toBeNull();
-    expect(fiber.getResult()).toBeNull();
+		expect(fiber.getOutcome()).toBeNull();
+		expect(fiber.getResult()).toBeNull();
 
-    taskComplete.resolve(ok(42));
-    await fiber;
+		taskComplete.resolve(ok(42));
+		await fiber;
 
-    expect(fiber.getOutcome()).toEqual(fiber.getResult());
-  });
+		expect(fiber.getOutcome()).toEqual(fiber.getResult());
+	});
 
-  test("getOutcome preserves original result when aborted", async () => {
-    await using run = testCreateRunner();
+	test("getOutcome preserves original result when aborted", async () => {
+		await using run = testCreateRunner();
 
-    const fiber = run(() => ok("data"));
-    fiber.abort("stop");
-    await fiber;
+		const fiber = run(() => ok("data"));
+		fiber.abort("stop");
+		await fiber;
 
 		// getResult returns AbortError
 		expect(fiber.getResult()).toEqual(
@@ -1018,173 +1018,173 @@ describe("Fiber", () => {
 				return ok();
 			};
 
-      // Call daemon directly on root runner (not from inside a task)
-      const fiber = run.daemon(daemonTask);
+			// Call daemon directly on root runner (not from inside a task)
+			const fiber = run.daemon(daemonTask);
 
-      expect(events).toEqual(["daemon started"]);
+			expect(events).toEqual(["daemon started"]);
 
-      daemonCanComplete.resolve();
-      await fiber;
+			daemonCanComplete.resolve();
+			await fiber;
 
-      expect(events).toEqual(["daemon started", "daemon completed"]);
-    });
+			expect(events).toEqual(["daemon started", "daemon completed"]);
+		});
 
-    test("outlives parent task", async () => {
-      const events: Array<string> = [];
-      const daemonCanComplete = Promise.withResolvers<void>();
-      let daemonFiber: Fiber<void>;
+		test("outlives parent task", async () => {
+			const events: Array<string> = [];
+			const daemonCanComplete = Promise.withResolvers<void>();
+			let daemonFiber: Fiber<void>;
 
-      await using run = testCreateRunner();
+			await using run = testCreateRunner();
 
-      const daemonTask: Task<void> = async () => {
-        events.push("daemon started");
-        await daemonCanComplete.promise;
-        events.push("daemon completed");
-        return ok();
-      };
+			const daemonTask: Task<void> = async () => {
+				events.push("daemon started");
+				await daemonCanComplete.promise;
+				events.push("daemon completed");
+				return ok();
+			};
 
-      const parentTask: Task<void> = (run) => {
-        events.push("parent started");
-        daemonFiber = run.daemon(daemonTask);
-        events.push("parent completed");
-        return ok();
-      };
+			const parentTask: Task<void> = (run) => {
+				events.push("parent started");
+				daemonFiber = run.daemon(daemonTask);
+				events.push("parent completed");
+				return ok();
+			};
 
-      await run(parentTask);
+			await run(parentTask);
 
-      // Parent completed but daemon should still be running
-      expect(events).toEqual([
-        "parent started",
-        "daemon started",
-        "parent completed",
-      ]);
+			// Parent completed but daemon should still be running
+			expect(events).toEqual([
+				"parent started",
+				"daemon started",
+				"parent completed",
+			]);
 
-      // Let daemon complete and wait for it
-      daemonCanComplete.resolve();
-      await daemonFiber!;
+			// Let daemon complete and wait for it
+			daemonCanComplete.resolve();
+			await daemonFiber!;
 
-      expect(events).toEqual([
-        "parent started",
-        "daemon started",
-        "parent completed",
-        "daemon completed",
-      ]);
-    });
+			expect(events).toEqual([
+				"parent started",
+				"daemon started",
+				"parent completed",
+				"daemon completed",
+			]);
+		});
 
-    test("aborted when root runner disposes", async () => {
-      const events: Array<string> = [];
-      const run = testCreateRunner();
+		test("aborted when root runner disposes", async () => {
+			const events: Array<string> = [];
+			const run = testCreateRunner();
 
-      const daemonTask: Task<void> = async ({ signal }) => {
-        events.push("daemon started");
-        const taskComplete = Promise.withResolvers<Result<void, AbortError>>();
+			const daemonTask: Task<void> = async ({ signal }) => {
+				events.push("daemon started");
+				const taskComplete = Promise.withResolvers<Result<void, AbortError>>();
 
-        const timeout = setTimeout(() => {
-          events.push("daemon completed");
-          taskComplete.resolve(ok());
-        }, 1000);
+				const timeout = setTimeout(() => {
+					events.push("daemon completed");
+					taskComplete.resolve(ok());
+				}, 1000);
 
-        signal.addEventListener(
-          "abort",
-          () => {
-            clearTimeout(timeout);
-            events.push("daemon aborted");
-            taskComplete.resolve(err(signal.reason));
-          },
-          { once: true },
-        );
+				signal.addEventListener(
+					"abort",
+					() => {
+						clearTimeout(timeout);
+						events.push("daemon aborted");
+						taskComplete.resolve(err(signal.reason));
+					},
+					{ once: true },
+				);
 
-        return await taskComplete.promise;
-      };
+				return await taskComplete.promise;
+			};
 
-      const parentTask: Task<void> = (run) => {
-        run.daemon(daemonTask);
-        return ok();
-      };
+			const parentTask: Task<void> = (run) => {
+				run.daemon(daemonTask);
+				return ok();
+			};
 
-      await run(parentTask);
-      expect(events).toEqual(["daemon started"]);
+			await run(parentTask);
+			expect(events).toEqual(["daemon started"]);
 
-      // Dispose root runner
-      await run[Symbol.asyncDispose]();
+			// Dispose root runner
+			await run[Symbol.asyncDispose]();
 
-      expect(events).toEqual(["daemon started", "daemon aborted"]);
-    });
+			expect(events).toEqual(["daemon started", "daemon aborted"]);
+		});
 
-    test("from nested task runs on root runner", async () => {
-      const events: Array<string> = [];
-      const daemonCanComplete = Promise.withResolvers<void>();
-      let daemonFiber: Fiber<void>;
+		test("from nested task runs on root runner", async () => {
+			const events: Array<string> = [];
+			const daemonCanComplete = Promise.withResolvers<void>();
+			let daemonFiber: Fiber<void>;
 
-      await using run = testCreateRunner();
+			await using run = testCreateRunner();
 
-      const daemonTask: Task<void> = async () => {
-        events.push("daemon started");
-        await daemonCanComplete.promise;
-        events.push("daemon completed");
-        return ok();
-      };
+			const daemonTask: Task<void> = async () => {
+				events.push("daemon started");
+				await daemonCanComplete.promise;
+				events.push("daemon completed");
+				return ok();
+			};
 
-      // Nested task spawns a daemon via run.daemon
-      const childTask: Task<void> = (run) => {
-        events.push("child started");
-        daemonFiber = run.daemon(daemonTask);
-        events.push("child completed");
-        return ok();
-      };
+			// Nested task spawns a daemon via run.daemon
+			const childTask: Task<void> = (run) => {
+				events.push("child started");
+				daemonFiber = run.daemon(daemonTask);
+				events.push("child completed");
+				return ok();
+			};
 
-      const parentTask: Task<void> = async (run) => {
-        events.push("parent started");
-        await run(childTask);
-        events.push("parent completed");
-        return ok();
-      };
+			const parentTask: Task<void> = async (run) => {
+				events.push("parent started");
+				await run(childTask);
+				events.push("parent completed");
+				return ok();
+			};
 
-      await run(parentTask);
+			await run(parentTask);
 
-      // Both parent and child completed, but daemon should still be running
-      expect(events).toEqual([
-        "parent started",
-        "child started",
-        "daemon started",
-        "child completed",
-        "parent completed",
-      ]);
+			// Both parent and child completed, but daemon should still be running
+			expect(events).toEqual([
+				"parent started",
+				"child started",
+				"daemon started",
+				"child completed",
+				"parent completed",
+			]);
 
-      daemonCanComplete.resolve();
-      await daemonFiber!;
+			daemonCanComplete.resolve();
+			await daemonFiber!;
 
-      expect(events).toEqual([
-        "parent started",
-        "child started",
-        "daemon started",
-        "child completed",
-        "parent completed",
-        "daemon completed",
-      ]);
-    });
-  });
+			expect(events).toEqual([
+				"parent started",
+				"child started",
+				"daemon started",
+				"child completed",
+				"parent completed",
+				"daemon completed",
+			]);
+		});
+	});
 
-  test("InferFiberOk and InferFiberErr extract type parameters", () => {
-    type MyFiber = Fiber<string, MyError>;
-    expectTypeOf<InferFiberOk<MyFiber>>().toEqualTypeOf<string>();
+	test("InferFiberOk and InferFiberErr extract type parameters", () => {
+		type MyFiber = Fiber<string, MyError>;
+		expectTypeOf<InferFiberOk<MyFiber>>().toEqualTypeOf<string>();
 
-    type MyFiber2 = Fiber<number, MyError>;
-    expectTypeOf<InferFiberErr<MyFiber2>>().toEqualTypeOf<MyError>();
+		type MyFiber2 = Fiber<number, MyError>;
+		expectTypeOf<InferFiberErr<MyFiber2>>().toEqualTypeOf<MyError>();
 
-    // Handles void Fiber
-    type VoidFiber = Fiber<void, Error>;
-    expectTypeOf<InferFiberOk<VoidFiber>>().toEqualTypeOf<void>();
-    expectTypeOf<InferFiberErr<VoidFiber>>().toEqualTypeOf<Error>();
-  });
+		// Handles void Fiber
+		type VoidFiber = Fiber<void, Error>;
+		expectTypeOf<InferFiberOk<VoidFiber>>().toEqualTypeOf<void>();
+		expectTypeOf<InferFiberErr<VoidFiber>>().toEqualTypeOf<Error>();
+	});
 });
 
 describe("unabortable", () => {
 	test("without abort completes", async () => {
 		await using run = testCreateRunner();
 
-    const okResult = await run(unabortable(() => ok(42)));
-    const errResult = await run(unabortable(() => err({ type: "MyError" })));
+		const okResult = await run(unabortable(() => ok(42)));
+		const errResult = await run(unabortable(() => err({ type: "MyError" })));
 
 		expect(okResult).toEqual(ok(42));
 		expect(errResult).toEqual(err({ type: "MyError" }));
@@ -1202,14 +1202,14 @@ describe("unabortable", () => {
 			await Promise.resolve(); // yield to let abort propagate
 			signalAbortedBeforeUnabortable = run.signal.aborted;
 
-      innerResult = await run(
-        unabortable(() => {
-          taskRan = true;
-          return ok("done");
-        }),
-      );
-      return innerResult;
-    });
+			innerResult = await run(
+				unabortable(() => {
+					taskRan = true;
+					return ok("done");
+				}),
+			);
+			return innerResult;
+		});
 
 		fiber.abort("stop");
 		const result = await fiber;
@@ -1261,14 +1261,14 @@ describe("unabortableMask", () => {
 
 		let abortableRan = false;
 
-    const task = unabortableMask((restore) => async (run) => {
-      return await run(
-        restore(() => {
-          abortableRan = true;
-          return ok("done");
-        }),
-      );
-    });
+		const task = unabortableMask((restore) => async (run) => {
+			return await run(
+				restore(() => {
+					abortableRan = true;
+					return ok("done");
+				}),
+			);
+		});
 
 		const result = await run(task);
 
@@ -1291,13 +1291,13 @@ describe("unabortableMask", () => {
 				unabortableMask((restore) => async (run) => {
 					events.push("acquire");
 
-          // abortable task is skipped because abort was requested
-          await run(
-            restore(() => {
-              events.push("use");
-              return ok();
-            }),
-          );
+					// abortable task is skipped because abort was requested
+					await run(
+						restore(() => {
+							events.push("use");
+							return ok();
+						}),
+					);
 
 					events.push("release");
 					return ok();
@@ -1333,20 +1333,20 @@ describe("unabortableMask", () => {
 
 			signalAbortedAfterAwait = run.signal.aborted;
 
-      // Regular task runs because it inherits the abort mask
-      await run(({ signal }) => {
-        signalAbortedInUnmaskedTask = signal.aborted;
-        events.push("unmasked task");
-        return ok();
-      });
+			// Regular task runs because it inherits the abort mask
+			await run(({ signal }) => {
+				signalAbortedInUnmaskedTask = signal.aborted;
+				events.push("unmasked task");
+				return ok();
+			});
 
-      // Abortable task is skipped
-      await run(
-        restore(() => {
-          events.push("use");
-          return ok();
-        }),
-      );
+			// Abortable task is skipped
+			await run(
+				restore(() => {
+					events.push("use");
+					return ok();
+				}),
+			);
 
 			events.push("release");
 			return ok();
@@ -1384,21 +1384,21 @@ describe("unabortableMask", () => {
 					innerStarted.resolve();
 					await canContinue.promise;
 
-          // abortable1 restores to mask=0 (fully abortable)
-          await run(
-            restore1(({ signal }) => {
-              events.push(`abortable1 task (aborted=${signal.aborted})`);
-              return ok();
-            }),
-          );
+					// abortable1 restores to mask=0 (fully abortable)
+					await run(
+						restore1(({ signal }) => {
+							events.push(`abortable1 task (aborted=${signal.aborted})`);
+							return ok();
+						}),
+					);
 
-          // restore2 restores to mask=1 (still protected)
-          await run(
-            restore2(({ signal }) => {
-              events.push(`restore2 task (aborted=${signal.aborted})`);
-              return ok();
-            }),
-          );
+					// restore2 restores to mask=1 (still protected)
+					await run(
+						restore2(({ signal }) => {
+							events.push(`restore2 task (aborted=${signal.aborted})`);
+							return ok();
+						}),
+					);
 
 					events.push("inner release");
 					return ok();
@@ -1428,11 +1428,11 @@ describe("unabortableMask", () => {
 
 		let restoreFromInner: (<T, E>(task: Task<T, E>) => Task<T, E>) | undefined;
 
-    const task = unabortableMask((_restore1) => async (run) => {
-      return await run(
-        unabortableMask((restore2) => (_run) => {
-          // restore2 restores to mask=1
-          restoreFromInner = restore2;
+		const task = unabortableMask((_restore1) => async (run) => {
+			return await run(
+				unabortableMask((restore2) => (_run) => {
+					// restore2 restores to mask=1
+					restoreFromInner = restore2;
 
 					return ok();
 				}),
@@ -1443,133 +1443,133 @@ describe("unabortableMask", () => {
 		expect(result).toEqual(ok());
 		expect(restoreFromInner).toBeDefined();
 
-    // Using restore2 outside its intended scope would increase abort mask
-    // (root mask=0, override=1). This must crash.
-    expect(() =>
-      run(
-        restoreFromInner!(() => {
-          return ok();
-        }),
-      ),
-    ).toThrow("restore used outside its unabortableMask");
-  });
+		// Using restore2 outside its intended scope would increase abort mask
+		// (root mask=0, override=1). This must crash.
+		expect(() =>
+			run(
+				restoreFromInner!(() => {
+					return ok();
+				}),
+			),
+		).toThrow("restore used outside its unabortableMask");
+	});
 });
 
 describe("AsyncDisposableStack", () => {
-  interface Resource extends globalThis.AsyncDisposable {
-    readonly id: string;
-  }
+	interface Resource extends globalThis.AsyncDisposable {
+		readonly id: string;
+	}
 
-  const createResource =
-    (id: string, events: Array<string>): Task<Resource> =>
-    () => {
-      events.push(`${id} acquired`);
-      return ok({
-        id,
-        // eslint-disable-next-line @typescript-eslint/require-await
-        [Symbol.asyncDispose]: async () => {
-          events.push(`${id} released`);
-        },
-      });
-    };
+	const createResource =
+		(id: string, events: Array<string>): Task<Resource> =>
+		() => {
+			events.push(`${id} acquired`);
+			return ok({
+				id,
+				// eslint-disable-next-line @typescript-eslint/require-await
+				[Symbol.asyncDispose]: async () => {
+					events.push(`${id} released`);
+				},
+			});
+		};
 
-  describe("stack via Runner", () => {
-    test("run.stack() creates AsyncDisposableStack", async () => {
-      await using run = testCreateRunner();
+	describe("stack via Runner", () => {
+		test("run.stack() creates AsyncDisposableStack", async () => {
+			await using run = testCreateRunner();
 
-      const events: Array<string> = [];
+			const events: Array<string> = [];
 
-      const task: Task<string> = async (run) => {
-        await using stack = run.stack();
+			const task: Task<string> = async (run) => {
+				await using stack = run.stack();
 
-        expectTypeOf(stack).toEqualTypeOf<AsyncDisposableStack>();
+				expectTypeOf(stack).toEqualTypeOf<AsyncDisposableStack>();
 
-        stack.defer(() => {
-          events.push("cleanup");
-          return ok();
-        });
+				stack.defer(() => {
+					events.push("cleanup");
+					return ok();
+				});
 
-        events.push("work");
-        return ok("done");
-      };
+				events.push("work");
+				return ok("done");
+			};
 
-      const result = await run(task);
+			const result = await run(task);
 
-      expect(result).toEqual(ok("done"));
-      expect(events).toEqual(["work", "cleanup"]);
-    });
-  });
+			expect(result).toEqual(ok("done"));
+			expect(events).toEqual(["work", "cleanup"]);
+		});
+	});
 
-  describe("defer", () => {
-    test("runs task on dispose", async () => {
-      await using run = testCreateRunner();
+	describe("defer", () => {
+		test("runs task on dispose", async () => {
+			await using run = testCreateRunner();
 
-      const events: Array<string> = [];
+			const events: Array<string> = [];
 
-      const cleanup: Task<void> = () => {
-        events.push("cleanup");
-        return ok();
-      };
+			const cleanup: Task<void> = () => {
+				events.push("cleanup");
+				return ok();
+			};
 
-      const task: Task<string> = async (run) => {
-        await using stack = run.stack();
-        stack.defer(cleanup);
-        events.push("work");
-        return ok("done");
-      };
+			const task: Task<string> = async (run) => {
+				await using stack = run.stack();
+				stack.defer(cleanup);
+				events.push("work");
+				return ok("done");
+			};
 
-      const result = await run(task);
+			const result = await run(task);
 
-      expect(result).toEqual(ok("done"));
-      expect(events).toEqual(["work", "cleanup"]);
-    });
+			expect(result).toEqual(ok("done"));
+			expect(events).toEqual(["work", "cleanup"]);
+		});
 
-    test("runs multiple deferred tasks in LIFO order", async () => {
-      await using run = testCreateRunner();
+		test("runs multiple deferred tasks in LIFO order", async () => {
+			await using run = testCreateRunner();
 
-      const events: Array<string> = [];
+			const events: Array<string> = [];
 
-      const task: Task<string> = async (run) => {
-        await using stack = run.stack();
-        stack.defer(() => {
-          events.push("cleanup A");
-          return ok();
-        });
-        stack.defer(() => {
-          events.push("cleanup B");
-          return ok();
-        });
-        events.push("work");
-        return ok("done");
-      };
+			const task: Task<string> = async (run) => {
+				await using stack = run.stack();
+				stack.defer(() => {
+					events.push("cleanup A");
+					return ok();
+				});
+				stack.defer(() => {
+					events.push("cleanup B");
+					return ok();
+				});
+				events.push("work");
+				return ok("done");
+			};
 
-      const result = await run(task);
+			const result = await run(task);
 
-      expect(result).toEqual(ok("done"));
-      expect(events).toEqual(["work", "cleanup B", "cleanup A"]);
-    });
+			expect(result).toEqual(ok("done"));
+			expect(events).toEqual(["work", "cleanup B", "cleanup A"]);
+		});
 
-    test("is unabortable", async () => {
-      await using run = testCreateRunner();
+		test("is unabortable", async () => {
+			await using run = testCreateRunner();
 
-      const events: Array<string> = [];
-      const taskStarted = Promise.withResolvers<void>();
-      const canComplete = Promise.withResolvers<void>();
+			const events: Array<string> = [];
+			const taskStarted = Promise.withResolvers<void>();
+			const canComplete = Promise.withResolvers<void>();
 
-      const task: Task<string, AbortError> = async (run) => {
-        await using stack = run.stack();
-        stack.defer(() => {
-          events.push("cleanup");
-          return ok();
-        });
-        events.push("work started");
-        taskStarted.resolve();
-        await canComplete.promise;
-        if (run.signal.aborted) {
-          return err(run.signal.reason);
-        }
-        return ok("done");
-      };
+			const task: Task<string, AbortError> = async (run) => {
+				await using stack = run.stack();
+				stack.defer(() => {
+					events.push("cleanup");
+					return ok();
+				});
+				events.push("work started");
+				taskStarted.resolve();
+				await canComplete.promise;
+				if (run.signal.aborted) {
+					return err(run.signal.reason);
+				}
+				return ok("done");
+			};
 
 			const fiber = run(task);
 			await taskStarted.promise;
@@ -1592,13 +1592,13 @@ describe("AsyncDisposableStack", () => {
 			const task: Task<string> = async (run) => {
 				const stack = run.stack();
 
-        stack.defer(() => {
-          events.push("cleanup");
-          return ok();
-        });
+				stack.defer(() => {
+					events.push("cleanup");
+					return ok();
+				});
 
-        events.push("work");
-        await stack.disposeAsync();
+				events.push("work");
+				await stack.disposeAsync();
 
 				return ok("done");
 			};
@@ -1690,10 +1690,10 @@ describe("AsyncDisposableStack", () => {
 
 			const events: Array<string> = [];
 
-      const failingResource: Task<Resource, AcquireError> = () => {
-        events.push("b failed");
-        return err({ type: "AcquireError" });
-      };
+			const failingResource: Task<Resource, AcquireError> = () => {
+				events.push("b failed");
+				return err({ type: "AcquireError" });
+			};
 
 			const task: Task<string, AcquireError> = async (run) => {
 				await using stack = run.stack();
@@ -1713,73 +1713,73 @@ describe("AsyncDisposableStack", () => {
 
 			const result = await run(task);
 
-      expect(result).toEqual(err({ type: "AcquireError" }));
-      expect(events).toEqual(["a acquired", "b failed", "a released"]);
-    });
+			expect(result).toEqual(err({ type: "AcquireError" }));
+			expect(events).toEqual(["a acquired", "b failed", "a released"]);
+		});
 
-    test("releases acquired resources when acquire throws", async () => {
-      await using run = testCreateRunner();
+		test("releases acquired resources when acquire throws", async () => {
+			await using run = testCreateRunner();
 
-      const events: Array<string> = [];
+			const events: Array<string> = [];
 
-      const throwingAcquire: Task<Resource> = () => {
-        events.push("b throwing");
-        throw new Error("acquire threw");
-      };
+			const throwingAcquire: Task<Resource> = () => {
+				events.push("b throwing");
+				throw new Error("acquire threw");
+			};
 
-      const task: Task<string> = async (run) => {
-        await using stack = run.stack();
+			const task: Task<string> = async (run) => {
+				await using stack = run.stack();
 
-        const a = await stack.use(createResource("a", events));
-        if (!a.ok) return a;
+				const a = await stack.use(createResource("a", events));
+				if (!a.ok) return a;
 
-        const b = await stack.use(throwingAcquire);
-        if (!b.ok) return b;
+				const b = await stack.use(throwingAcquire);
+				if (!b.ok) return b;
 
-        const c = await stack.use(createResource("c", events));
-        if (!c.ok) return c;
+				const c = await stack.use(createResource("c", events));
+				if (!c.ok) return c;
 
-        events.push(`using ${a.value.id}, ${b.value.id}, ${c.value.id}`);
-        return ok("done");
-      };
+				events.push(`using ${a.value.id}, ${b.value.id}, ${c.value.id}`);
+				return ok("done");
+			};
 
-      await expect(run(task)).rejects.toThrow("acquire threw");
-      expect(events).toEqual(["a acquired", "b throwing", "a released"]);
-    });
+			await expect(run(task)).rejects.toThrow("acquire threw");
+			expect(events).toEqual(["a acquired", "b throwing", "a released"]);
+		});
 
-    test("acquisition is unabortable", async () => {
-      await using run = testCreateRunner();
+		test("acquisition is unabortable", async () => {
+			await using run = testCreateRunner();
 
-      const events: Array<string> = [];
-      const canComplete = Promise.withResolvers<void>();
+			const events: Array<string> = [];
+			const canComplete = Promise.withResolvers<void>();
 
-      const slowAcquire: Task<Resource> = async ({ signal }) => {
-        events.push(`acquire started, aborted: ${signal.aborted}`);
-        await canComplete.promise;
-        events.push(`acquire completed, aborted: ${signal.aborted}`);
-        return ok({
-          id: "slow",
-          // eslint-disable-next-line @typescript-eslint/require-await
-          [Symbol.asyncDispose]: async () => {
-            events.push("slow released");
-          },
-        });
-      };
+			const slowAcquire: Task<Resource> = async ({ signal }) => {
+				events.push(`acquire started, aborted: ${signal.aborted}`);
+				await canComplete.promise;
+				events.push(`acquire completed, aborted: ${signal.aborted}`);
+				return ok({
+					id: "slow",
+					// eslint-disable-next-line @typescript-eslint/require-await
+					[Symbol.asyncDispose]: async () => {
+						events.push("slow released");
+					},
+				});
+			};
 
-      const task: Task<string, AbortError> = async (run) => {
-        await using stack = run.stack();
-        const a = await stack.use(slowAcquire);
-        if (!a.ok) return a;
-        if (run.signal.aborted) {
-          return err(run.signal.reason);
-        }
-        events.push(`using ${a.value.id}`);
-        return ok("done");
-      };
+			const task: Task<string, AbortError> = async (run) => {
+				await using stack = run.stack();
+				const a = await stack.use(slowAcquire);
+				if (!a.ok) return a;
+				if (run.signal.aborted) {
+					return err(run.signal.reason);
+				}
+				events.push(`using ${a.value.id}`);
+				return ok("done");
+			};
 
-      const fiber = run(task);
-      fiber.abort("stop");
-      canComplete.resolve();
+			const fiber = run(task);
+			fiber.abort("stop");
+			canComplete.resolve();
 
 			const result = await fiber;
 
@@ -1796,91 +1796,91 @@ describe("AsyncDisposableStack", () => {
 
 			const events: Array<string> = [];
 
-      interface SyncResource extends Disposable {
-        readonly id: string;
-      }
+			interface SyncResource extends Disposable {
+				readonly id: string;
+			}
 
-      const createSyncResource =
-        (id: string): Task<SyncResource> =>
-        () => {
-          events.push(`${id} acquired`);
-          return ok({
-            id,
-            [Symbol.dispose]: () => {
-              events.push(`${id} released`);
-            },
-          });
-        };
+			const createSyncResource =
+				(id: string): Task<SyncResource> =>
+				() => {
+					events.push(`${id} acquired`);
+					return ok({
+						id,
+						[Symbol.dispose]: () => {
+							events.push(`${id} released`);
+						},
+					});
+				};
 
-      const task: Task<string> = async (run) => {
-        await using stack = run.stack();
-        const a = await stack.use(createSyncResource("a"));
-        if (!a.ok) return a;
-        events.push(`using ${a.value.id}`);
-        return ok("done");
-      };
+			const task: Task<string> = async (run) => {
+				await using stack = run.stack();
+				const a = await stack.use(createSyncResource("a"));
+				if (!a.ok) return a;
+				events.push(`using ${a.value.id}`);
+				return ok("done");
+			};
 
-      const result = await run(task);
+			const result = await run(task);
 
-      expect(result).toEqual(ok("done"));
-      expect(events).toEqual(["a acquired", "using a", "a released"]);
-    });
+			expect(result).toEqual(ok("done"));
+			expect(events).toEqual(["a acquired", "using a", "a released"]);
+		});
 
-    test("accepts null without registering disposal", async () => {
-      await using run = testCreateRunner();
+		test("accepts null without registering disposal", async () => {
+			await using run = testCreateRunner();
 
-      const task: Task<null> = async (run) => {
-        await using stack = run.stack();
-        const result = await stack.use(() => ok(null));
-        return result;
-      };
+			const task: Task<null> = async (run) => {
+				await using stack = run.stack();
+				const result = await stack.use(() => ok(null));
+				return result;
+			};
 
-      expect(await run(task)).toEqual(ok(null));
-    });
+			expect(await run(task)).toEqual(ok(null));
+		});
 
-    test("accepts undefined without registering disposal", async () => {
-      await using run = testCreateRunner();
+		test("accepts undefined without registering disposal", async () => {
+			await using run = testCreateRunner();
 
-      const task: Task<undefined> = async (run) => {
-        await using stack = run.stack();
-        const result = await stack.use(() => ok(undefined));
-        return result;
-      };
+			const task: Task<undefined> = async (run) => {
+				await using stack = run.stack();
+				const result = await stack.use(() => ok(undefined));
+				return result;
+			};
 
-      expect(await run(task)).toEqual(ok(undefined));
-    });
+			expect(await run(task)).toEqual(ok(undefined));
+		});
 
-    test("accepts direct value (sync)", async () => {
-      await using run = testCreateRunner();
+		test("accepts direct value (sync)", async () => {
+			await using run = testCreateRunner();
 
-      const events: Array<string> = [];
+			const events: Array<string> = [];
 
-      const task: Task<string> = async (run) => {
-        await using stack = run.stack();
+			const task: Task<string> = async (run) => {
+				await using stack = run.stack();
 
-        const resource: AsyncDisposable = {
-          // eslint-disable-next-line @typescript-eslint/require-await
-          [Symbol.asyncDispose]: async () => {
-            events.push("released");
-          },
-        };
+				const resource: AsyncDisposable = {
+					// eslint-disable-next-line @typescript-eslint/require-await
+					[Symbol.asyncDispose]: async () => {
+						events.push("released");
+					},
+				};
 
-        const value = stack.use(resource);
-        expectTypeOf(value).toEqualTypeOf<AsyncDisposable>();
-        expect(value).toBe(resource);
+				const value = stack.use(resource);
+				expectTypeOf(value).toEqualTypeOf<AsyncDisposable>();
+				expect(value).toBe(resource);
 
-        events.push("work");
-        return ok("done");
-      };
+				events.push("work");
+				return ok("done");
+			};
 
-      const result = await run(task);
+			const result = await run(task);
 
-      expect(result).toEqual(ok("done"));
-      expect(events).toEqual(["work", "released"]);
-    });
+			expect(result).toEqual(ok("done"));
+			expect(events).toEqual(["work", "released"]);
+		});
 
-    test("accepts disposable callable (not mistaken for Task)", async () => {
-      await using run = testCreateRunner();
+		test("accepts disposable callable (not mistaken for Task)", async () => {
+			await using run = testCreateRunner();
 
 			let childRunner: Runner | null = null;
 			let stateWhileWorking: RunnerState | null = null;
@@ -1912,12 +1912,12 @@ describe("AsyncDisposableStack", () => {
 			const task: Task<string> = async (run) => {
 				await using outerStack = run.stack();
 
-        // Create inner stack with resources
-        const innerStack = run.stack();
-        innerStack.defer(() => {
-          events.push("inner cleanup");
-          return ok();
-        });
+				// Create inner stack with resources
+				const innerStack = run.stack();
+				innerStack.defer(() => {
+					events.push("inner cleanup");
+					return ok();
+				});
 
 				// Move and add to outer stack
 				const moved = innerStack.move();
@@ -1940,413 +1940,413 @@ describe("AsyncDisposableStack", () => {
 
 			const events: Array<string> = [];
 
-      interface Handle {
-        readonly id: string;
-      }
+			interface Handle {
+				readonly id: string;
+			}
 
-      const acquireHandle =
-        (id: string): Task<Handle> =>
-        () => {
-          events.push(`${id} acquired`);
-          return ok({ id });
-        };
+			const acquireHandle =
+				(id: string): Task<Handle> =>
+				() => {
+					events.push(`${id} acquired`);
+					return ok({ id });
+				};
 
 			const task: Task<string> = async (run) => {
 				await using stack = run.stack();
 
-        const handle = await stack.adopt(acquireHandle("h1"), (h) => () => {
-          events.push(`${h.id} released`);
-          return ok();
-        });
-        if (!handle.ok) return handle;
-
-        events.push(`using ${handle.value.id}`);
-        return ok("done");
-      };
-
-      const result = await run(task);
-
-      expect(result).toEqual(ok("done"));
-      expect(events).toEqual(["h1 acquired", "using h1", "h1 released"]);
-    });
-
-    test("disposal is unabortable", async () => {
-      await using run = testCreateRunner();
-
-      const events: Array<string> = [];
-      const taskStarted = Promise.withResolvers<void>();
-      const canComplete = Promise.withResolvers<void>();
-
-      const task: Task<string, AbortError> = async (run) => {
-        await using stack = run.stack();
-
-        const handle = await stack.adopt(
-          () => ok({ id: "h1" }),
-          (h) => () => {
-            events.push(`${h.id} released`);
-            return ok();
-          },
-        );
-        if (!handle.ok) return handle;
-
-        events.push("work started");
-        taskStarted.resolve();
-        await canComplete.promise;
-        if (run.signal.aborted) {
-          return err(run.signal.reason);
-        }
-        return ok("done");
-      };
-
-      const fiber = run(task);
-      await taskStarted.promise;
-      fiber.abort("stop");
-      canComplete.resolve();
-
-      const result = await fiber;
-
-      expect(result).toEqual(err({ type: "AbortError", reason: "stop" }));
-      expect(events).toEqual(["work started", "h1 released"]);
-    });
-
-    test("does not register disposal if acquire fails", async () => {
-      await using run = testCreateRunner();
-
-      const events: Array<string> = [];
-
-      interface AcquireError extends Typed<"AcquireError"> {}
-
-      const task: Task<string, AcquireError> = async (run) => {
-        await using stack = run.stack();
-
-        const handle = await stack.adopt<{ id: string }, AcquireError>(
-          () => {
-            events.push("acquire failed");
-            return err({ type: "AcquireError" });
-          },
-          (h) => () => {
-            events.push(`${h.id} released`);
-            return ok();
-          },
-        );
-        if (!handle.ok) return handle;
-
-        events.push(`using ${handle.value.id}`);
-        return ok("done");
-      };
-
-      const result = await run(task);
-
-      expect(result).toEqual(err({ type: "AcquireError" }));
-      // Release should not be called since acquire failed
-      expect(events).toEqual(["acquire failed"]);
-    });
-  });
-
-  describe("move", () => {
-    test("transfers ownership to returned AsyncDisposableStack", async () => {
-      await using run = testCreateRunner();
-
-      const events: Array<string> = [];
-
-      const createBundle: Task<
-        { a: Resource; b: Resource } & AsyncDisposable
-      > = async (run) => {
-        await using stack = run.stack();
-
-        const a = await stack.use(createResource("a", events));
-        if (!a.ok) return a;
-
-        const b = await stack.use(createResource("b", events));
-        if (!b.ok) return b;
-
-        const moved = stack.move();
-        return ok({
-          a: a.value,
-          b: b.value,
-          [Symbol.asyncDispose]: () => moved.disposeAsync(),
-        });
-      };
-
-      const bundle = await run(createBundle);
-      expect(bundle.ok).toBe(true);
-      if (!bundle.ok) throw new Error("unreachable");
-
-      events.push(`using ${bundle.value.a.id}, ${bundle.value.b.id}`);
-
-      // Resources not released yet
-      expect(events).toEqual(["a acquired", "b acquired", "using a, b"]);
-
-      // Dispose the bundle
-      await bundle.value[Symbol.asyncDispose]();
-
-      expect(events).toEqual([
-        "a acquired",
-        "b acquired",
-        "using a, b",
-        "b released",
-        "a released",
-      ]);
-    });
-
-    test("cleans up on early return after move is possible", async () => {
-      await using run = testCreateRunner();
-
-      const events: Array<string> = [];
-      const canContinue = Promise.withResolvers<void>();
-
-      // Abortable factory - if aborted, acquired resources are cleaned up
-      const createBundle: Task<
-        { a: Resource; b: Resource } & AsyncDisposable
-      > = async (run) => {
-        await using stack = run.stack();
-
-        const a = await stack.use(createResource("a", events));
-        if (!a.ok) return a;
-
-        // Simulate slow acquisition
-        await canContinue.promise;
-
-        // Check abort after await
-        if (run.signal.aborted) {
-          return err(run.signal.reason);
-        }
-
-        const b = await stack.use(createResource("b", events));
-        if (!b.ok) return b;
-
-        const moved = stack.move();
-        return ok({
-          a: a.value,
-          b: b.value,
-          [Symbol.asyncDispose]: () => moved.disposeAsync(),
-        });
-      };
-
-      const fiber = run(createBundle);
-
-      // Abort while 'a' is acquired but waiting for 'b'
-      fiber.abort("cancelled");
-      canContinue.resolve();
-
-      const result = await fiber;
-
-      expect(result).toEqual(err({ type: "AbortError", reason: "cancelled" }));
-      // 'a' was acquired then cleaned up when scope exited
-      expect(events).toEqual(["a acquired", "a released"]);
-    });
-  });
-
-  describe("cleanup runs on root scope", () => {
-    test("defer cleanup survives factory task scope", async () => {
-      await using run = testCreateRunner();
-
-      const events: Array<string> = [];
-
-      // Factory task creates a resource with Task-based cleanup via defer
-      const createBundle: Task<AsyncDisposable> = async (run) => {
-        await using stack = run.stack();
-
-        events.push("factory: acquired");
-        stack.defer(() => {
-          events.push("factory: cleanup via defer");
-          return ok();
-        });
-
-        const moved = stack.move();
-        return ok({
-          [Symbol.asyncDispose]: () => moved.disposeAsync(),
-        });
-      };
-
-      // Run factory - task scope ends after this
-      const bundle = await run(createBundle);
-      expect(bundle.ok).toBe(true);
-      if (!bundle.ok) throw new Error("unreachable");
-
-      events.push("using bundle after factory ended");
-
-      // Factory task scope is dead, but cleanup should still work
-      // because defer() uses daemon (root scope)
-      await bundle.value[Symbol.asyncDispose]();
-
-      expect(events).toEqual([
-        "factory: acquired",
-        "using bundle after factory ended",
-        "factory: cleanup via defer",
-      ]);
-    });
-
-    test("adopt disposal survives factory task scope", async () => {
-      await using run = testCreateRunner();
-
-      const events: Array<string> = [];
-
-      interface Handle {
-        readonly id: string;
-      }
-
-      // Factory task creates a resource with Task-based disposal via adopt
-      const createBundle: Task<{ handle: Handle } & AsyncDisposable> = async (
-        run,
-      ) => {
-        await using stack = run.stack();
-
-        const handle = await stack.adopt<Handle>(
-          () => {
-            events.push("factory: h1 acquired");
-            return ok({ id: "h1" });
-          },
-          (h) => () => {
-            events.push(`factory: ${h.id} disposal via adopt`);
-            return ok();
-          },
-        );
-        if (!handle.ok) return handle;
-
-        const moved = stack.move();
-        return ok({
-          handle: handle.value,
-          [Symbol.asyncDispose]: () => moved.disposeAsync(),
-        });
-      };
-
-      // Run factory - task scope ends after this
-      const bundle = await run(createBundle);
-      expect(bundle.ok).toBe(true);
-      if (!bundle.ok) throw new Error("unreachable");
-
-      events.push(`using ${bundle.value.handle.id} after factory ended`);
-
-      // Factory task scope is dead, but disposal should still work
-      // because adopt() uses daemon (root scope)
-      await bundle.value[Symbol.asyncDispose]();
-
-      expect(events).toEqual([
-        "factory: h1 acquired",
-        "using h1 after factory ended",
-        "factory: h1 disposal via adopt",
-      ]);
-    });
-  });
-
-  describe("AsyncDisposable with Task-based disposal via run.defer", () => {
-    interface Resource extends AsyncDisposable {
-      readonly id: string;
-    }
-
-    const createResourceFactory = (
-      events: Array<string>,
-      disposalTask?: Task<void>,
-    ) => {
-      const createResource: Task<Resource> = (run) => {
-        events.push("acquired");
-        return ok({
-          id: "r1",
-          ...run.defer(
-            disposalTask ??
-              (() => {
-                events.push("disposed");
-                return ok();
-              }),
-          ),
-        });
-      };
-      return createResource;
-    };
-
-    test("disposal runs when stack disposes", async () => {
-      await using run = testCreateRunner();
-
-      const events: Array<string> = [];
-
-      const task: Task<string> = async (run) => {
-        await using stack = run.stack();
-        const r = await stack.use(createResourceFactory(events));
-        if (!r.ok) return r;
-        events.push("work");
-        return ok("done");
-      };
-
-      const result = await run(task);
-
-      expect(result).toEqual(ok("done"));
-      expect(events).toEqual(["acquired", "work", "disposed"]);
-    });
-
-    test("disposal completes even when parent task is aborted", async () => {
-      await using run = testCreateRunner();
-
-      const events: Array<string> = [];
-      const workStarted = Promise.withResolvers<void>();
-      const canComplete = Promise.withResolvers<void>();
-
-      const cleanupHelper: Task<void> = () => {
-        events.push("cleanup helper ran");
-        return ok();
-      };
-
-      const task: Task<string, AbortError> = async (run) => {
-        await using stack = run.stack();
-
-        const r = await stack.use(
-          createResourceFactory(events, async (run) => {
-            events.push("disposal started");
-            await canComplete.promise;
-            // Verify runner works inside disposal task
-            await run(cleanupHelper);
-            events.push("disposal completed");
-            return ok();
-          }),
-        );
-        if (!r.ok) return r;
-
-        events.push("work started");
-        workStarted.resolve();
-
-        await new Promise((resolve) => setTimeout(resolve, 10));
-        if (run.signal.aborted) return err(run.signal.reason);
-
-        events.push("work completed");
-        return ok("done");
-      };
-
-      const fiber = run(task);
-      await workStarted.promise;
-      fiber.abort("stop");
-      canComplete.resolve();
-
-      const result = await fiber;
-
-      expect(result).toEqual(err({ type: "AbortError", reason: "stop" }));
-      expect(events).toEqual([
-        "acquired",
-        "work started",
-        "disposal started",
-        "cleanup helper ran",
-        "disposal completed",
-      ]);
-    });
-
-    test("disposal survives factory task scope ending", async () => {
-      await using run = testCreateRunner();
-
-      const events: Array<string> = [];
-
-      const r = await run(createResourceFactory(events));
-      expect(r.ok).toBe(true);
-      if (!r.ok) throw new Error("unreachable");
-
-      events.push("using after factory ended");
-      await r.value[Symbol.asyncDispose]();
-
-      expect(events).toEqual([
-        "acquired",
-        "using after factory ended",
-        "disposed",
-      ]);
-    });
-  });
+				const handle = await stack.adopt(acquireHandle("h1"), (h) => () => {
+					events.push(`${h.id} released`);
+					return ok();
+				});
+				if (!handle.ok) return handle;
+
+				events.push(`using ${handle.value.id}`);
+				return ok("done");
+			};
+
+			const result = await run(task);
+
+			expect(result).toEqual(ok("done"));
+			expect(events).toEqual(["h1 acquired", "using h1", "h1 released"]);
+		});
+
+		test("disposal is unabortable", async () => {
+			await using run = testCreateRunner();
+
+			const events: Array<string> = [];
+			const taskStarted = Promise.withResolvers<void>();
+			const canComplete = Promise.withResolvers<void>();
+
+			const task: Task<string, AbortError> = async (run) => {
+				await using stack = run.stack();
+
+				const handle = await stack.adopt(
+					() => ok({ id: "h1" }),
+					(h) => () => {
+						events.push(`${h.id} released`);
+						return ok();
+					},
+				);
+				if (!handle.ok) return handle;
+
+				events.push("work started");
+				taskStarted.resolve();
+				await canComplete.promise;
+				if (run.signal.aborted) {
+					return err(run.signal.reason);
+				}
+				return ok("done");
+			};
+
+			const fiber = run(task);
+			await taskStarted.promise;
+			fiber.abort("stop");
+			canComplete.resolve();
+
+			const result = await fiber;
+
+			expect(result).toEqual(err({ type: "AbortError", reason: "stop" }));
+			expect(events).toEqual(["work started", "h1 released"]);
+		});
+
+		test("does not register disposal if acquire fails", async () => {
+			await using run = testCreateRunner();
+
+			const events: Array<string> = [];
+
+			interface AcquireError extends Typed<"AcquireError"> {}
+
+			const task: Task<string, AcquireError> = async (run) => {
+				await using stack = run.stack();
+
+				const handle = await stack.adopt<{ id: string }, AcquireError>(
+					() => {
+						events.push("acquire failed");
+						return err({ type: "AcquireError" });
+					},
+					(h) => () => {
+						events.push(`${h.id} released`);
+						return ok();
+					},
+				);
+				if (!handle.ok) return handle;
+
+				events.push(`using ${handle.value.id}`);
+				return ok("done");
+			};
+
+			const result = await run(task);
+
+			expect(result).toEqual(err({ type: "AcquireError" }));
+			// Release should not be called since acquire failed
+			expect(events).toEqual(["acquire failed"]);
+		});
+	});
+
+	describe("move", () => {
+		test("transfers ownership to returned AsyncDisposableStack", async () => {
+			await using run = testCreateRunner();
+
+			const events: Array<string> = [];
+
+			const createBundle: Task<
+				{ a: Resource; b: Resource } & AsyncDisposable
+			> = async (run) => {
+				await using stack = run.stack();
+
+				const a = await stack.use(createResource("a", events));
+				if (!a.ok) return a;
+
+				const b = await stack.use(createResource("b", events));
+				if (!b.ok) return b;
+
+				const moved = stack.move();
+				return ok({
+					a: a.value,
+					b: b.value,
+					[Symbol.asyncDispose]: () => moved.disposeAsync(),
+				});
+			};
+
+			const bundle = await run(createBundle);
+			expect(bundle.ok).toBe(true);
+			if (!bundle.ok) throw new Error("unreachable");
+
+			events.push(`using ${bundle.value.a.id}, ${bundle.value.b.id}`);
+
+			// Resources not released yet
+			expect(events).toEqual(["a acquired", "b acquired", "using a, b"]);
+
+			// Dispose the bundle
+			await bundle.value[Symbol.asyncDispose]();
+
+			expect(events).toEqual([
+				"a acquired",
+				"b acquired",
+				"using a, b",
+				"b released",
+				"a released",
+			]);
+		});
+
+		test("cleans up on early return after move is possible", async () => {
+			await using run = testCreateRunner();
+
+			const events: Array<string> = [];
+			const canContinue = Promise.withResolvers<void>();
+
+			// Abortable factory - if aborted, acquired resources are cleaned up
+			const createBundle: Task<
+				{ a: Resource; b: Resource } & AsyncDisposable
+			> = async (run) => {
+				await using stack = run.stack();
+
+				const a = await stack.use(createResource("a", events));
+				if (!a.ok) return a;
+
+				// Simulate slow acquisition
+				await canContinue.promise;
+
+				// Check abort after await
+				if (run.signal.aborted) {
+					return err(run.signal.reason);
+				}
+
+				const b = await stack.use(createResource("b", events));
+				if (!b.ok) return b;
+
+				const moved = stack.move();
+				return ok({
+					a: a.value,
+					b: b.value,
+					[Symbol.asyncDispose]: () => moved.disposeAsync(),
+				});
+			};
+
+			const fiber = run(createBundle);
+
+			// Abort while 'a' is acquired but waiting for 'b'
+			fiber.abort("cancelled");
+			canContinue.resolve();
+
+			const result = await fiber;
+
+			expect(result).toEqual(err({ type: "AbortError", reason: "cancelled" }));
+			// 'a' was acquired then cleaned up when scope exited
+			expect(events).toEqual(["a acquired", "a released"]);
+		});
+	});
+
+	describe("cleanup runs on root scope", () => {
+		test("defer cleanup survives factory task scope", async () => {
+			await using run = testCreateRunner();
+
+			const events: Array<string> = [];
+
+			// Factory task creates a resource with Task-based cleanup via defer
+			const createBundle: Task<AsyncDisposable> = async (run) => {
+				await using stack = run.stack();
+
+				events.push("factory: acquired");
+				stack.defer(() => {
+					events.push("factory: cleanup via defer");
+					return ok();
+				});
+
+				const moved = stack.move();
+				return ok({
+					[Symbol.asyncDispose]: () => moved.disposeAsync(),
+				});
+			};
+
+			// Run factory - task scope ends after this
+			const bundle = await run(createBundle);
+			expect(bundle.ok).toBe(true);
+			if (!bundle.ok) throw new Error("unreachable");
+
+			events.push("using bundle after factory ended");
+
+			// Factory task scope is dead, but cleanup should still work
+			// because defer() uses daemon (root scope)
+			await bundle.value[Symbol.asyncDispose]();
+
+			expect(events).toEqual([
+				"factory: acquired",
+				"using bundle after factory ended",
+				"factory: cleanup via defer",
+			]);
+		});
+
+		test("adopt disposal survives factory task scope", async () => {
+			await using run = testCreateRunner();
+
+			const events: Array<string> = [];
+
+			interface Handle {
+				readonly id: string;
+			}
+
+			// Factory task creates a resource with Task-based disposal via adopt
+			const createBundle: Task<{ handle: Handle } & AsyncDisposable> = async (
+				run,
+			) => {
+				await using stack = run.stack();
+
+				const handle = await stack.adopt<Handle>(
+					() => {
+						events.push("factory: h1 acquired");
+						return ok({ id: "h1" });
+					},
+					(h) => () => {
+						events.push(`factory: ${h.id} disposal via adopt`);
+						return ok();
+					},
+				);
+				if (!handle.ok) return handle;
+
+				const moved = stack.move();
+				return ok({
+					handle: handle.value,
+					[Symbol.asyncDispose]: () => moved.disposeAsync(),
+				});
+			};
+
+			// Run factory - task scope ends after this
+			const bundle = await run(createBundle);
+			expect(bundle.ok).toBe(true);
+			if (!bundle.ok) throw new Error("unreachable");
+
+			events.push(`using ${bundle.value.handle.id} after factory ended`);
+
+			// Factory task scope is dead, but disposal should still work
+			// because adopt() uses daemon (root scope)
+			await bundle.value[Symbol.asyncDispose]();
+
+			expect(events).toEqual([
+				"factory: h1 acquired",
+				"using h1 after factory ended",
+				"factory: h1 disposal via adopt",
+			]);
+		});
+	});
+
+	describe("AsyncDisposable with Task-based disposal via run.defer", () => {
+		interface Resource extends AsyncDisposable {
+			readonly id: string;
+		}
+
+		const createResourceFactory = (
+			events: Array<string>,
+			disposalTask?: Task<void>,
+		) => {
+			const createResource: Task<Resource> = (run) => {
+				events.push("acquired");
+				return ok({
+					id: "r1",
+					...run.defer(
+						disposalTask ??
+							(() => {
+								events.push("disposed");
+								return ok();
+							}),
+					),
+				});
+			};
+			return createResource;
+		};
+
+		test("disposal runs when stack disposes", async () => {
+			await using run = testCreateRunner();
+
+			const events: Array<string> = [];
+
+			const task: Task<string> = async (run) => {
+				await using stack = run.stack();
+				const r = await stack.use(createResourceFactory(events));
+				if (!r.ok) return r;
+				events.push("work");
+				return ok("done");
+			};
+
+			const result = await run(task);
+
+			expect(result).toEqual(ok("done"));
+			expect(events).toEqual(["acquired", "work", "disposed"]);
+		});
+
+		test("disposal completes even when parent task is aborted", async () => {
+			await using run = testCreateRunner();
+
+			const events: Array<string> = [];
+			const workStarted = Promise.withResolvers<void>();
+			const canComplete = Promise.withResolvers<void>();
+
+			const cleanupHelper: Task<void> = () => {
+				events.push("cleanup helper ran");
+				return ok();
+			};
+
+			const task: Task<string, AbortError> = async (run) => {
+				await using stack = run.stack();
+
+				const r = await stack.use(
+					createResourceFactory(events, async (run) => {
+						events.push("disposal started");
+						await canComplete.promise;
+						// Verify runner works inside disposal task
+						await run(cleanupHelper);
+						events.push("disposal completed");
+						return ok();
+					}),
+				);
+				if (!r.ok) return r;
+
+				events.push("work started");
+				workStarted.resolve();
+
+				await new Promise((resolve) => setTimeout(resolve, 10));
+				if (run.signal.aborted) return err(run.signal.reason);
+
+				events.push("work completed");
+				return ok("done");
+			};
+
+			const fiber = run(task);
+			await workStarted.promise;
+			fiber.abort("stop");
+			canComplete.resolve();
+
+			const result = await fiber;
+
+			expect(result).toEqual(err({ type: "AbortError", reason: "stop" }));
+			expect(events).toEqual([
+				"acquired",
+				"work started",
+				"disposal started",
+				"cleanup helper ran",
+				"disposal completed",
+			]);
+		});
+
+		test("disposal survives factory task scope ending", async () => {
+			await using run = testCreateRunner();
+
+			const events: Array<string> = [];
+
+			const r = await run(createResourceFactory(events));
+			expect(r.ok).toBe(true);
+			if (!r.ok) throw new Error("unreachable");
+
+			events.push("using after factory ended");
+			await r.value[Symbol.asyncDispose]();
+
+			expect(events).toEqual([
+				"acquired",
+				"using after factory ended",
+				"disposed",
+			]);
+		});
+	});
 });
 
 describe("yieldNow", () => {
@@ -2421,12 +2421,12 @@ describe("race", () => {
 
 		const slowObservedAbort = Promise.withResolvers<unknown>();
 
-    const fast: Task<string> = () => ok("fast");
-    const slow: Task<string> = async ({ signal }) => {
-      await run(sleep("1ms"));
-      slowObservedAbort.resolve(signal.reason);
-      return ok("slow");
-    };
+		const fast: Task<string> = () => ok("fast");
+		const slow: Task<string> = async ({ signal }) => {
+			await run(sleep("1ms"));
+			slowObservedAbort.resolve(signal.reason);
+			return ok("slow");
+		};
 
 		const result = await run(race([fast, slow]));
 
@@ -2445,12 +2445,12 @@ describe("race", () => {
 
 		interface FastError extends Typed<"FastError"> {}
 
-    const fast: Task<never, FastError> = () => err({ type: "FastError" });
-    const slow: Task<string> = async ({ signal }) => {
-      await run(sleep("1ms"));
-      slowObservedAbort.resolve(signal.reason);
-      return ok("slow");
-    };
+		const fast: Task<never, FastError> = () => err({ type: "FastError" });
+		const slow: Task<string> = async ({ signal }) => {
+			await run(sleep("1ms"));
+			slowObservedAbort.resolve(signal.reason);
+			return ok("slow");
+		};
 
 		const result = await run(race([fast, slow]));
 
@@ -2469,14 +2469,14 @@ describe("race", () => {
 
 		const slowObservedAbort = Promise.withResolvers<unknown>();
 
-    const throwing: Task<never> = () => {
-      throw new Error("boom");
-    };
-    const slow: Task<string> = async ({ signal }) => {
-      await run(sleep("1ms"));
-      slowObservedAbort.resolve(signal.reason);
-      return ok("slow");
-    };
+		const throwing: Task<never> = () => {
+			throw new Error("boom");
+		};
+		const slow: Task<string> = async ({ signal }) => {
+			await run(sleep("1ms"));
+			slowObservedAbort.resolve(signal.reason);
+			return ok("slow");
+		};
 
 		await expect(run(race([throwing, slow]))).rejects.toThrow("boom");
 
@@ -2491,8 +2491,8 @@ describe("race", () => {
 		interface ErrorA extends Typed<"ErrorA"> {}
 		interface ErrorB extends Typed<"ErrorB"> {}
 
-    const taskA: Task<string, ErrorA> = () => ok("a");
-    const taskB: Task<number, ErrorB> = () => ok(42);
+		const taskA: Task<string, ErrorA> = () => ok("a");
+		const taskB: Task<number, ErrorB> = () => ok(42);
 
 		const result = await run(race([taskA, taskB]));
 
@@ -2506,11 +2506,11 @@ describe("race", () => {
 	test("works with Iterable via isNonEmptyArray", async () => {
 		await using run = testCreateRunner();
 
-    // Simulate tasks from an Iterable (e.g., Set, Map.values(), generator)
-    const taskSet = new Set<Task<string>>([
-      () => ok("first"),
-      () => ok("second"),
-    ]);
+		// Simulate tasks from an Iterable (e.g., Set, Map.values(), generator)
+		const taskSet = new Set<Task<string>>([
+			() => ok("first"),
+			() => ok("second"),
+		]);
 
 		// Spread to array, then use isNonEmptyArray to narrow type
 		const tasksArray = [...taskSet];
@@ -2531,12 +2531,12 @@ describe("race", () => {
 
 		let loserCompleted = false;
 
-    const winner: Task<string> = () => ok("winner");
-    const unabortableLoser: Task<string> = unabortable(async (run) => {
-      await run(sleep("10s"));
-      loserCompleted = true;
-      return ok("loser");
-    });
+		const winner: Task<string> = () => ok("winner");
+		const unabortableLoser: Task<string> = unabortable(async (run) => {
+			await run(sleep("10s"));
+			loserCompleted = true;
+			return ok("loser");
+		});
 
 		const start = Date.now();
 		const result = await run(race([winner, unabortableLoser]));
@@ -2592,12 +2592,12 @@ describe("race", () => {
 
 		const slowObservedAbort = Promise.withResolvers<unknown>();
 
-    const fast: Task<string> = () => ok("fast");
-    const slow: Task<string> = async ({ signal }) => {
-      await run(sleep("1ms"));
-      slowObservedAbort.resolve(signal.reason);
-      return ok("slow");
-    };
+		const fast: Task<string> = () => ok("fast");
+		const slow: Task<string> = async ({ signal }) => {
+			await run(sleep("1ms"));
+			slowObservedAbort.resolve(signal.reason);
+			return ok("slow");
+		};
 
 		const customReason = { type: "CustomAbort", message: "you lost" };
 		const result = await run(race([fast, slow], { abortReason: customReason }));
@@ -2614,7 +2614,7 @@ describe("timeout", () => {
 	test("completes when task finishes before timeout", async () => {
 		await using run = testCreateRunner();
 
-    const fast: Task<string> = () => ok("done");
+		const fast: Task<string> = () => ok("done");
 
 		const result = await run(timeout("1s", fast));
 
@@ -3109,9 +3109,9 @@ describe("examples TODO: review", () => {
 		test("abort wins, outcome preserves original result", async () => {
 			await using run = testCreateRunner();
 
-      const fiber = run(() => ok("data"));
-      fiber.abort("stop");
-      const result = await fiber;
+			const fiber = run(() => ok("data"));
+			fiber.abort("stop");
+			const result = await fiber;
 
 			expect(result).toEqual(err({ type: "AbortError", reason: "stop" }));
 			expect(fiber.getOutcome()).toEqual(ok("data"));
@@ -3120,9 +3120,9 @@ describe("examples TODO: review", () => {
 		test("unabortable preserves result and outcome", async () => {
 			await using run = testCreateRunner();
 
-      const fiber = run(unabortable(() => ok("data")));
-      fiber.abort("stop");
-      const result = await fiber;
+			const fiber = run(unabortable(() => ok("data")));
+			fiber.abort("stop");
+			const result = await fiber;
 
 			expect(result).toEqual(ok("data"));
 			expect(fiber.getOutcome()).toEqual(ok("data"));

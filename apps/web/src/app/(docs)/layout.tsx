@@ -20,7 +20,6 @@ export default async function RootLayout({
 }: {
 	children: React.ReactNode;
 }): Promise<React.ReactElement> {
-<<<<<<< HEAD
 	// Dev note: Do not re-enable glob + importing every MDX file here;
 	// it makes build and hot reload slow.
 
