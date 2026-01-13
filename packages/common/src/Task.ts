@@ -733,6 +733,9 @@ export interface FiberSnapshot {
 
 	/** Child snapshots in spawn (start) order. */
 	readonly children: ReadonlyArray<FiberSnapshot>;
+
+	/** The abort mask depth. `0` means abortable, `>= 1` means unabortable. */
+	readonly abortMask: AbortMask;
 }
 
 /**
@@ -1174,7 +1177,7 @@ const createRunnerInternal =
 						abortMask,
 					};
 				}
-				return snapshot;
+				return snapshot!;
 			};
 			run.onEvent = undefined;
 

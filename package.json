@@ -4,21 +4,21 @@
 	"scripts": {
 		"dev": "turbo --filter @evolu/* dev --filter web --concurrency=11",
 		"build": "turbo --filter @evolu/* build",
-		"build:web": "pnpm build:docs && turbo --filter web build",
-		"build:docs": "typedoc && pnpm --filter=web run fix:docs",
+		"build:web": "bun run build:docs && turbo --filter web build",
+		"build:docs": "typedoc && bun run --filter=web fix:docs",
 		"test": "turbo run test",
 		"test:coverage": "turbo run test:coverage",
 		"test:watch": "turbo run test:watch",
 		"start": "turbo start",
-		"lint": "turbo lint && pnpm lint:root",
+		"lint": "turbo lint && bun run lint:root",
 		"lint:root": "biome check *.json *.yaml scripts",
-		"format": "turbo format && pnpm format:root",
+		"format": "turbo format && bun run format:root",
 		"format:root": "biome check *.json *.yaml scripts --write",
-		"lint-monorepo": "pnpm dlx sherif@latest",
-		"verify": "pnpm build && pnpm test && pnpm lint && pnpm lint-monorepo && pnpm typedoc",
-		"clean": "turbo clean && rimraf node_modules pnpm-lock.yaml .turbo .eslintcache out",
+		"lint-monorepo": "bunx sherif@latest",
+		"verify": "bun run build && bun run test && bun run lint && bun run lint-monorepo && bun run typedoc",
+		"clean": "turbo clean && rimraf node_modules pnpm-lock.yaml bun.lock .turbo .eslintcache out",
 		"version": "changeset version",
-		"release": "pnpm run build && changeset publish",
+		"release": "bun run build && changeset publish",
 		"ios": "cd examples/react-expo && pnpm ios",
 		"android": "cd examples/react-expo && pnpm android",
 		"bench": "turbo bench",
@@ -39,7 +39,7 @@
 		"typedoc": "^0.28.16",
 		"typedoc-plugin-markdown": "^4.9.0",
 		"typescript": "^5.9.3",
-		"vitest": "^4.0.16"
+		"vitest": "^4.0.17"
 	},
 	"engines": {
 		"node": ">=24.0.0"

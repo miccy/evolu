@@ -48,10 +48,10 @@
 		"set.prototype.union": "^1.1.3"
 	},
 	"devDependencies": {
-		"@evolu/biome-config": "workspace:*",
 		"@babel/core": "^7.28.0",
 		"@babel/plugin-transform-explicit-resource-management": "^7.28.0",
 		"@babel/plugin-transform-modules-commonjs": "^7.27.1",
+		"@evolu/biome-config": "workspace:*",
 		"@types/react": "~19.2.8",
 		"typescript": "^5.9.3"
 	}

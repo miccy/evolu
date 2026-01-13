@@ -1,72 +1,66 @@
 # Evolu
 
-Evolu is a TypeScript library and local-first platform.
+Evolu is a local-first platform designed for privacy, ease of use, and no vendor lock-in. It provides a set of libraries to build apps that work offline, sync automatically, and encrypt data end-to-end.
 
-## Documentation
+[evolu.dev](https://www.evolu.dev)
 
-For detailed information and usage examples, please visit [evolu.dev](https://www.evolu.dev).
+## Features
 
-## Community
+- **Local-First**: Data lives on the device first.
+- **Privacy-Centric**: End-to-end encryption by default.
+- **Sync**: Automatic sync across devices using CRDTs.
+- **Typed**: Built with TypeScript for type safety.
+- **SQL**: SQLite support in the browser and on devices.
 
-The Evolu community is on [GitHub Discussions](https://github.com/evoluhq/evolu/discussions), where you can ask questions and voice ideas.
+## Requirements
 
-To chat with other community members, you can join the [Evolu Discord](https://discord.gg/2J8yyyyxtZ).
+- [Bun](https://bun.sh) (latest)
+- Node.js >= 22
 
-[![X](https://img.shields.io/twitter/url/https/x.com/evoluhq.svg?style=social&label=Follow%20%40evoluhq)](https://x.com/evoluhq)
+## Development
 
-## Developing
+Evolu is a monorepo managed by **Turbo** and **Bun**. We use **Biome** for linting and formatting.
 
-Evolu monorepo uses [pnpm](https://pnpm.io).
+### Getting Started
 
 Install dependencies:
 
+```bash
+bun install
 ```
-pnpm install
+
+Start the development environment (web docs + examples):
+
+```bash
+bun dev
 ```
 
-Build scripts
+### Scripts
 
-- `pnpm build` - Build packages
-- `pnpm build:web` - Build docs and web
+- **Linting**: `bun run lint` (Check code quality with Biome)
+- **Formatting**: `bun run format` (Apply formatting with Biome)
+- **Testing**: `bun run test` (Run tests with Vitest)
+- **Build**: `bun run build` (Build all packages)
+- **Clean**: `bun run clean` (Clean artifacts and node_modules)
 
-Web build notes
+## Project Structure
 
-- Uses webpack (`next build --webpack`) because SharedWorker is required.
-- Uses `NODE_OPTIONS=--max-old-space-size-percentage=75` to avoid V8 heap OOM on large docs builds.
-- On macOS Tahoe, you may need to raise Launch Services limits too (shell `ulimit -n` is not enough):
-  - `sudo launchctl limit maxfiles 262144 262144`
+- `packages/`
+  - `common`: Core logic, platform-agnostic.
+  - `react`: React hooks and components.
+  - `react-native`: React Native integration.
+  - `web`: Web-specific implementations.
+  - `server`: Sync and signaling server.
+- `apps/`
+  - `web`: Documentation and website (Next.js).
+- `examples/`: Sample applications demonstrating usage.
 
-Start dev
+## Community
 
-> **Warning**: Run `pnpm build` before running dev. Packages must be built first.
+- [GitHub Discussions](https://github.com/evoluhq/evolu/discussions)
+- [Discord](https://discord.gg/2J8yyyyxtZ)
+- [X (Twitter)](https://x.com/evoluhq)
 
-- `pnpm dev` - Dev server for web
-- `pnpm ios` - Run iOS example (requires `pnpm dev` running)
-- `pnpm android` - Run Android example (requires `pnpm dev` running)
+## License
 
-Examples
-
-> **Note**: To work on examples with local packages, run `pnpm examples:toggle-deps` first.
-
-- `pnpm examples:react-nextjs:dev` - Dev server for React Next.js example
-- `pnpm examples:react-vite-pwa:dev` - Dev server for React Vite PWA example
-- `pnpm examples:svelte-vite-pwa:dev` - Dev server for Svelte Vite PWA example
-- `pnpm examples:vue-vite-pwa:dev` - Dev server for Vue Vite PWA example
-- `pnpm examples:build` - Build all examples
-
-Linting
-
-- `pnpm lint` - Lint code
-- `pnpm lint-monorepo` - Lint monorepo structure
-
-Testing
-
-- `pnpm test` - Run tests
-
-Release
-
-- `pnpm changeset` - Describe changes for release log
-
-Verify
-
-- `pnpm verify` - Run all checks (build, lint, test) before commit
+MIT
