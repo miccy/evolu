@@ -34,7 +34,8 @@
 		"build": "rimraf dist && tsc",
 		"clean": "rimraf .turbo node_modules dist",
 		"format": "biome check . --write",
-		"lint": "biome check ."
+		"lint": "biome check .",
+		"test": "vitest"
 	},
 	"devDependencies": {
 		"@evolu/biome-config": "workspace:*",
