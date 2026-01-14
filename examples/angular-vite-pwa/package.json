@@ -9,7 +9,7 @@
     "generate-pwa-assets": "pwa-assets-generator"
   },
   "dependencies": {
-    "@angular/core": "^21.0.1",
+    "@angular/core": "^21.0.7",
     "@angular/platform-browser": "^21.0.1",
     "@evolu/common": "latest",
     "@evolu/web": "latest"
